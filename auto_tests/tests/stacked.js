@@ -57,8 +57,8 @@ stackedTestCase.prototype.testCorrectColors = function() {
   };
 
   // 38 = round(0.15 * 255)
-  assertEquals([0, 0, 255, 38], getPixel(imageData, 200, 250));
-  assertEquals([0, 255, 0, 38], getPixel(imageData, 200, 150));
+  assertEquals([0, 255, 0, 38], getPixel(imageData, 200, 250));
+  assertEquals([0, 0, 255, 38], getPixel(imageData, 200, 290));
 };
 
 // Regression test for http://code.google.com/p/dygraphs/issues/detail?id=358

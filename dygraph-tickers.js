@@ -423,7 +423,7 @@ Dygraph.getDateAxis = function(start_time, end_time, granularity, opts, dg) {
           g /= 24;
 
           if (g == 7) {  // one week
-            d.setDate(d.getDate() - d.getDay());
+            d.setDate(d.getDate() - d.getDay() + 1); // [WIT] add one day to have the ticks on monday.
           }
         }
       }

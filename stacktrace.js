@@ -225,6 +225,15 @@ printStackTrace.implementation.prototype = {
         var ANON = '{anonymous}', fnRE = /function\s*([\w\-$]+)?\s*\(/i, stack = [], fn, args, maxStackSize = 10;
         while (curr && stack.length < maxStackSize) {
             fn = fnRE.test(curr.toString()) ? RegExp.$1 || ANON : ANON;
+            
+            // [WIT] try to fix problem occures in safari.
+			      try {
+				      var test = curr['arguments'];
+			      } catch (e) {
+				      stack[stack.length] = "...error during parse stack... ";
+				      return stack;
+			      }
+            
             args = Array.prototype.slice.call(curr['arguments'] || []);
             stack[stack.length] = fn + '(' + this.stringifyArguments(args) + ')';
             curr = curr.caller;

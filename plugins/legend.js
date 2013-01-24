@@ -73,7 +73,8 @@ legend.prototype.activate = function(g) {
       "width": divWidth + "px",
       "top": "0px",
       "left": (g.size().width - divWidth - 2) + "px",
-      "background": "white",
+      // [WIT] don't use background atleast background-color!!!
+      //"background-color": "#ffffff",
       "lineHeight": "normal",
       "textAlign": "left",
       "overflow": "hidden"};
@@ -94,7 +95,11 @@ legend.prototype.activate = function(g) {
     }
 
     // TODO(danvk): come up with a cleaner way to expose this.
-    g.graphDiv.appendChild(div);
+    // [WIT] don't add to DOM the legend when showLabelsOnHighlight is false.
+    if (g.getOption('showLabelsOnHighlight') === true) {
+      g.graphDiv.appendChild(div);
+    }
+
     this.is_generated_div_ = true;
   }
 
@@ -138,6 +143,12 @@ legend.prototype.deselect = function(e) {
 };
 
 legend.prototype.didDrawChart = function(e) {
+  // [WIT] don't add to DOM the legend when showLabelsOnHighlight is false.
+  if (e.dygraph.getOption('showLabelsOnHighlight') !== true && this.legend_div_ && this.legend_div_.parentNode == e.dygraph.graphDiv) {
+    //$(this.legend_div_).detach()
+    e.dygraph.graphDiv.removeChild(this.legend_div_);
+  }
+
   this.deselect(e);
 };
 
@@ -154,11 +165,17 @@ legend.prototype.predraw = function(e) {
   // Don't touch a user-specified labelsDiv.
   if (!this.is_generated_div_) return;
 
+  // [WIT] don't add to DOM the legend when showLabelsOnHighlight is false.
+  if (e.dygraph.getOption('showLabelsOnHighlight') !== true) return;
+
   // TODO(danvk): only use real APIs for this.
   e.dygraph.graphDiv.appendChild(this.legend_div_);
   var area = e.dygraph.plotter_.area;
   var labelsDivWidth = e.dygraph.getOption("labelsDivWidth");
-  this.legend_div_.style.left = area.x + area.w - labelsDivWidth - 1 + "px";
+
+  // [WIT] take care of axisTickSize to setup legend position.
+  var axisTickSizes = 3 * e.dygraph.getOption('axisTickSize');
+  this.legend_div_.style.left = area.x + area.w - labelsDivWidth - axisTickSizes - 1 + "px";
   this.legend_div_.style.top = area.y + "px";
   this.legend_div_.style.width = labelsDivWidth + "px";
 };
@@ -183,71 +200,142 @@ legend.prototype.destroy = function() {
  * relevant when displaying a legend with no selection (i.e. {legend:
  * 'always'}) and with dashed lines.
  */
+// [WIT] custom legend html
 generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
-  // TODO(danvk): deprecate this option in place of {legend: 'never'}
-  if (g.getOption('showLabelsOnHighlight') !== true) return '';
+  // [WIT] test if WIT legend is active
+  if (g.getOption('withWITLegend') !== true) {
 
-  // If no points are selected, we display a default legend. Traditionally,
-  // this has been blank. But a better default would be a conventional legend,
-  // which provides essential information for a non-interactive chart.
-  var html, sepLines, i, dash, strokePattern;
-  var labels = g.getLabels();
+    // TODO(danvk): deprecate this option in place of {legend: 'never'}
+    if (g.getOption('showLabelsOnHighlight') !== true) return '';
 
-  if (typeof(x) === 'undefined') {
-    if (g.getOption('legend') != 'always') {
-      return '';
+    // If no points are selected, we display a default legend. Traditionally,
+    // this has been blank. But a better default would be a conventional legend,
+    // which provides essential information for a non-interactive chart.
+    var html, sepLines, i, dash, strokePattern;
+    var labels = g.getLabels();
+
+    if (typeof (x) === 'undefined') {
+      if (g.getOption('legend') != 'always') {
+        return '';
+      }
+
+      sepLines = g.getOption('labelsSeparateLines');
+      html = '';
+      for (i = 1; i < labels.length; i++) {
+        var series = g.getPropertiesForSeries(labels[i]);
+        if (!series.visible) continue;
+
+        if (html !== '') html += (sepLines ? '<br/>' : ' ');
+        strokePattern = g.getOption("strokePattern", labels[i]);
+        dash = generateLegendDashHTML(strokePattern, series.color, oneEmWidth);
+        html += "<span style='font-weight: bold; color: " + series.color + ";'>" +
+            dash + " " + labels[i] + "</span>";
+      }
+      return html;
     }
 
-    sepLines = g.getOption('labelsSeparateLines');
-    html = '';
-    for (i = 1; i < labels.length; i++) {
-      var series = g.getPropertiesForSeries(labels[i]);
-      if (!series.visible) continue;
+    // TODO(danvk): remove this use of a private API
+    var xOptView = g.optionsViewForAxis_('x');
+    var xvf = xOptView('valueFormatter');
+    html = xvf(x, xOptView, labels[0], g);
+    if (html !== '') {
+      html += ':';
+    }
 
-      if (html !== '') html += (sepLines ? '<br/>' : ' ');
-      strokePattern = g.getOption("strokePattern", labels[i]);
-      dash = generateLegendDashHTML(strokePattern, series.color, oneEmWidth);
-      html += "<span style='font-weight: bold; color: " + series.color + ";'>" +
-          dash + " " + labels[i] + "</span>";
+    var yOptViews = [];
+    var num_axes = g.numAxes();
+    for (i = 0; i < num_axes; i++) {
+      // TODO(danvk): remove this use of a private API
+      yOptViews[i] = g.optionsViewForAxis_('y' + (i ? 1 + i : ''));
+    }
+    var showZeros = g.getOption("labelsShowZeroValues");
+    sepLines = g.getOption("labelsSeparateLines");
+    var highlightSeries = g.getHighlightSeries();
+    for (i = 0; i < sel_points.length; i++) {
+      var pt = sel_points[i];
+      if (pt.yval === 0 && !showZeros) continue;
+      if (!Dygraph.isOK(pt.canvasy)) continue;
+      if (sepLines) html += "<br/>";
+
+      var series = g.getPropertiesForSeries(pt.name);
+      var yOptView = yOptViews[series.axis - 1];
+      var fmtFunc = yOptView('valueFormatter');
+      var yval = fmtFunc(pt.yval, yOptView, pt.name, g);
+
+      var cls = (pt.name == highlightSeries) ? " class='highlight'" : "";
+
+      // TODO(danvk): use a template string here and make it an attribute.
+      html += "<span" + cls + ">" + " <b><span style='color: " + series.color + ";'>" +
+          pt.name + "</span></b>:" + yval + "</span>";
     }
     return html;
-  }
 
-  // TODO(danvk): remove this use of a private API
-  var xOptView = g.optionsViewForAxis_('x');
-  var xvf = xOptView('valueFormatter');
-  html = xvf(x, xOptView, labels[0], g);
-  if (html !== '') {
-    html += ':';
-  }
+  } else {
 
-  var yOptViews = [];
-  var num_axes = g.numAxes();
-  for (i = 0; i < num_axes; i++) {
+    // This masks some numeric issues in older versions of Firefox,
+    // where 1.0/Math.pow(10,2) != Math.pow(10,-2).
+    var pow = function(base, exp) {
+      if (exp < 0) {
+        return 1.0 / Math.pow(base, -exp);
+      }
+      return Math.pow(base, exp);
+    };
+
+    // TODO(danvk): deprecate this option in place of {legend: 'never'}
+    if (g.getOption('showLabelsOnHighlight') !== true) return '';
+
+    // If no points are selected, we display a default legend. Traditionally,
+    // this has been blank. But a better default would be a conventional legend,
+    // which provides essential information for a non-interactive chart.
+    var html = '<h3>' + g.getOption('legendInfoTitle') + ' ';
+    var sepLines, i, c, dash, strokePattern;
+    var labels = g.getLabels();
+
+    if (typeof (x) === 'undefined') {
+      if (g.getOption('legend') != 'always') {
+        html += '...</h3>';
+        html += '<p  class="alert alert-info">' + g.getOption('legendInfoMessage') + '</p>';
+        return html;
+      }
+    }
+
     // TODO(danvk): remove this use of a private API
-    yOptViews[i] = g.optionsViewForAxis_('y' + (i ? 1 + i : ''));
+    var xOptView = g.optionsViewForAxis_('x');
+    var xvf = xOptView('valueFormatter');
+    html += xvf(x, xOptView, labels[0], g);
+
+    html += '</h3><table style="width:100%;">';
+
+    var yOptViews = [];
+    var num_axes = g.numAxes();
+    for (i = 0; i < num_axes; i++) {
+      // TODO(danvk): remove this use of a private API
+      yOptViews[i] = g.optionsViewForAxis_('y' + (i ? 1 + i : ''));
+    }
+    var showZeros = g.getOption("labelsShowZeroValues");
+    var highlightSeries = g.getHighlightSeries();
+    for (i = 0; i < sel_points.length; i++) {
+      var pt = sel_points[i];
+      if (pt.yval === 0 && !showZeros) continue;
+      if (!Dygraph.isOK(pt.canvasy)) continue;
+
+      var series = g.getPropertiesForSeries(pt.name);
+      var yOptView = yOptViews[series.axis - 1];
+      var fmtFunc = yOptView('valueFormatter');
+      var yval = fmtFunc(pt.yval, pt.name, yOptView, g);
+      var label = yval;
+      var cls = (pt.name == highlightSeries) ? " class='highlight'" : "";
+
+      // TODO(danvk): use a template string here and make it an attribute.
+      html += "<tr" + cls + '>' + '<td style="padding:1px 3px 1px 0; vertical-align: middle;">' +
+        '<div style="border: 1px solid #444;border-radius: 3px; width:15px; height:15px; background-color:' +
+        series.color + '"></div></td><td style="width:100%;"><b><span>' +
+        pt.name + '</span></b></td><td style="text-align:right;">' + label + "</td></tr>";
+    }
+
+    html += '</table>';
+    return html;
   }
-  var showZeros = g.getOption("labelsShowZeroValues");
-  sepLines = g.getOption("labelsSeparateLines");
-  var highlightSeries = g.getHighlightSeries();
-  for (i = 0; i < sel_points.length; i++) {
-    var pt = sel_points[i];
-    if (pt.yval === 0 && !showZeros) continue;
-    if (!Dygraph.isOK(pt.canvasy)) continue;
-    if (sepLines) html += "<br/>";
-
-    var series = g.getPropertiesForSeries(pt.name);
-    var yOptView = yOptViews[series.axis - 1];
-    var fmtFunc = yOptView('valueFormatter');
-    var yval = fmtFunc(pt.yval, yOptView, pt.name, g);
-
-    var cls = (pt.name == highlightSeries) ? " class='highlight'" : "";
-
-    // TODO(danvk): use a template string here and make it an attribute.
-    html += "<span" + cls + ">" + " <b><span style='color: " + series.color + ";'>" +
-        pt.name + "</span></b>:" + yval + "</span>";
-  }
-  return html;
 };
 
 

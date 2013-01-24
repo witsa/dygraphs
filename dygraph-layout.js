@@ -310,7 +310,19 @@ DygraphLayout.prototype._evaluateLineTicks = function() {
  */
 DygraphLayout.prototype.evaluateWithError = function() {
   this.evaluate();
-  if (!(this.attr_('errorBars') || this.attr_('customBars'))) return;
+
+  // [WIT] witbars
+  var labels = this.dygraph_.attributes_.labels;
+  var anyWitBars = false;
+  for (var labelIdx = 0; labelIdx < labels.length; labelIdx++) {
+    var label = labels[labelIdx];
+    if (this.dygraph_.getOption('witBars', label)) {
+      anyWitBars = true;
+      break;
+    }
+  }
+ // _(labels).any(function(label) { return this.dygraph_.attr_('witBars', label); }, this);
+  if (!(this.attr_('errorBars') || this.attr_('customBars') || anyWitBars)) return;
 
   // Copy over the error terms
   var i = 0;  // index in this.points
@@ -337,6 +349,32 @@ DygraphLayout.prototype.evaluateWithError = function() {
         var yv_plus = yv + errorPlus;
         points[j].y_top = DygraphLayout._calcYNormal(axis, yv_minus, logscale);
         points[j].y_bottom = DygraphLayout._calcYNormal(axis, yv_plus, logscale);
+      }
+
+      // [WIT] setup point y-values from raw data
+      var labels = this.attr_('labels');
+      if (this.dygraph_.attr_('witBars', labels[setIdx + 1])) {
+        var yMinValue = DygraphLayout.parseFloat_(item[2]);
+        var yMaxValue = DygraphLayout.parseFloat_(item[3]);
+
+        var yInValue = DygraphLayout.parseFloat_(item[4]);
+        var yOutValue = DygraphLayout.parseFloat_(item[5]);
+        var yAvgValue = DygraphLayout.parseFloat_(item[1]);
+        var countValue = DygraphLayout.parseFloat_(item[6]);
+
+        // Range from 0-1 where 0 represents top and 1 represents bottom
+        var yInNormal = DygraphLayout._calcYNormal(axis, yInValue);
+        var yOutNormal = DygraphLayout._calcYNormal(axis, yOutValue);
+
+        points[j].yIn = yInNormal;
+        points[j].yOut = yOutNormal;
+
+        points[j].yMinVal = yMinValue;
+        points[j].yMaxVal = yMaxValue;
+        points[j].yInVal = yInValue;
+        points[j].yOutVal = yOutValue;
+
+        points[j].count = countValue;
       }
     }
   }

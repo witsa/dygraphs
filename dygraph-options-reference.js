@@ -64,6 +64,18 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     ],
     "description": "Draw a custom item when drawPoints is enabled. Default is a small dot matching the series color. This method should constrain drawing to within pointSize pixels from (cx, cy).  Also see <a href='#drawHighlightPointCallback'>drawHighlightPointCallback</a>"
   },
+  // [WIT] define panCallback parameter.
+  "panCallback": {
+    "default": "null",
+    "labels": ["Data Line display"],
+    "type": "function(e, x, y)",
+    "parameters": [
+      ["e", "the click event"],
+      ["x", "center x coordinate"],
+      ["y", "center y coordinate"]
+    ],
+    "description": "Rised when pan move or touch move is finished."
+  },
   "height": {
     "default": "320",
     "labels": ["Overall display"],
@@ -144,6 +156,20 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     "labels": ["Interactive Elements"],
     "type": "float",
     "description": "Fade the background while highlighting series. 1=fully visible background (disable fading), 0=hiddden background (show highlighted series only)."
+  },
+  // [WIT] define highlightSeries
+  "highlightSeries": {
+    "default": "null",
+    "labels": ["Interactive Elements"],
+    "type": "array<string>",
+    "description": "When set, the series with these name will be highlighted, applied to the timeseries closest to the mouse pointer for interactive highlighting. See also 'highlightCallback'."
+  },
+  // [WIT] define highlightSeriesBackgroundColor
+  "highlightSeriesBackgroundColor": {
+    "default": "#FFFFFF",
+    "labels": ["Interactive Elements"],
+    "type": "string",
+    "description": "fading background color of the graph while highlighting series."
   },
   "includeZero": {
     "default": "false",
@@ -459,6 +485,27 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     "type": "string",
     "description": "When to display the legend. By default, it only appears when a user mouses over the chart. Set it to \"always\" to always display a legend of some sort."
   },
+  // [WIT] define withWITLegend
+  "withWITLegend": {
+    "default": "false",
+    "labels": ["Legend"],
+    "type": "boolean",
+    "description": "Command the display of the WIT custom legend instead of the default legend."
+  },
+  // [WIT] define legendInfoTitle
+  "legendInfoTitle": {
+    "default": "legend:",
+    "labels": ["Legend"],
+    "type": "string",
+    "description": "Title of the WIT custom legend."
+  },
+  // [WIT] define legendInfoMessage
+  "legendInfoMessage": {
+    "default": "no selection",
+    "labels": ["Legend"],
+    "type": "string",
+    "description": "The message display by default when no selection in the WIT custom legend."
+  },
   "labelsShowZeroValues": {
     "default": "true",
     "labels": ["Legend"],
@@ -573,6 +620,13 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     "labels": ["CSV parsing", "Error Bars"],
     "type": "boolean",
     "description": "Does the data contain standard deviations? Setting this to true alters the input format (see above)."
+  },
+  // [WIT] define witBars parameter
+  "witBars": {
+    "default": "false",
+    "labels": ["WIT Bars"],
+    "type": "boolean",
+    "description": "When set, parse each cell as \"min;average;max;in;out\". wit bars will be drawn for each point between min and max, with the series itself going through connect out to in."
   },
   "displayAnnotations": {
     "default": "false",
@@ -793,6 +847,8 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
    'Data',
    'Data Line display',
    'Data Series Colors',
+   // [WIT] wit bars category
+   'WIT Bars',
    'Error Bars',
    'Grid',
    'Interactive Elements',

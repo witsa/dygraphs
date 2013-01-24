@@ -70,14 +70,17 @@ axes.prototype.layout = function(e) {
     e.reserveSpaceBottom(h);
   }
 
-  if (g.numAxes() == 2) {
+  // [WIT] authorise more than 2 axes
+  if (g.numAxes() >= 2) {
     // TODO(danvk): per-axis setting.
     var w = g.getOption('yAxisLabelWidth') + 2 * g.getOption('axisTickSize');
     e.reserveSpaceRight(w);
-  } else if (g.numAxes() > 2) {
-    g.error("Only two y-axes are supported at this time. (Trying " +
-            "to use " + g.numAxes() + ")");
-  }
+   }
+   // [WIT] disable this warning
+   //else if (g.numAxes() > 2) {
+   //  g.error("Only two y-axes are supported at this time. (Trying " +
+   //          "to use " + g.numAxes() + ")");
+   //}
 };
 
 axes.prototype.detachLabels = function() {
@@ -200,8 +203,10 @@ axes.prototype.willDrawChart = function(e) {
           label.style.textAlign = "right";
         } else if (tick[0] == 1) {
           label.style.left = (area.x + area.w +
-                              g.getOption('axisTickSize')) + "px";
-          label.style.textAlign = "left";
+                              g.getOption('axisTickSize') - 10) + "px";
+          
+          // [WIT] change text align of axis y labels.
+          label.style.textAlign = "right";
         }
         label.style.width = g.getOption('yAxisLabelWidth') + "px";
         containerDiv.appendChild(label);

@@ -1,3 +1,6 @@
+//console.log("load dygraph.js.");
+// [WIT] firefox hack to force interprete script.
+//document.write();
 /**
  * @license
  * Copyright 2006 Dan Vanderkam (danvdk@gmail.com)
@@ -199,6 +202,16 @@ Dygraph.DEFAULT_ATTRS = {
   highlightCircleSize: 3,
   highlightSeriesOpts: null,
   highlightSeriesBackgroundAlpha: 0.5,
+
+  // [WIT] highlightSeriesBackgroundColor default value
+  highlightSeriesBackgroundColor: '#FFFFFF',
+
+  // [WIT] highlightSeries default value
+  highlightSeries: null,
+
+  //[WIT] wit custom legend default values.
+  legendInfoTitle: 'legend:',
+  legendInfoMessage: 'no selection',
 
   labelsDivWidth: 250,
   labelsDivStyles: {
@@ -874,7 +887,8 @@ Dygraph.prototype.toPercentXCoord = function(x) {
  * @return { Integer } The number of columns.
  */
 Dygraph.prototype.numColumns = function() {
-  return this.rawData_[0] ? this.rawData_[0].length : this.attr_("labels").length;
+  // [WIT] test if rawData is null.
+  return this.rawData_ && this.rawData_[0] ? this.rawData_[0].length : this.attr_("labels").length;
 };
 
 /**
@@ -948,7 +962,7 @@ Dygraph.prototype.createInterface_ = function() {
 
   // The interactive parts of the graph are drawn on top of the chart.
   this.graphDiv.appendChild(this.hidden_);
-  this.graphDiv.appendChild(this.canvas_);
+  this.graphDiv.appendChild(this.canvas_);                                                  
   this.mouseEventElement_ = this.createMouseEventElement_();
 
   // Create the grapher
@@ -966,7 +980,12 @@ Dygraph.prototype.createInterface_ = function() {
   };
   this.addEvent(this.mouseEventElement_, 'mouseout', this.mouseOutHandler);
 
-  this.resizeHandler = function(e) {
+  // [WIT] remove event before adding.
+  if (this.resizeHandler) {
+    Dygraph.removeEvent(window, 'resize', this.resizeHandler);
+  }
+  
+   this.resizeHandler = function(e) {
     dygraph.resize();
   };
 
@@ -988,10 +1007,14 @@ Dygraph.prototype.destroy = function() {
     }
   };
 
-  for (var idx = 0; idx < this.registeredEvents_.length; idx++) {
-    var reg = this.registeredEvents_[idx];
-    Dygraph.removeEvent(reg.elem, reg.type, reg.fn);
+  // [WIT] add robust here.
+  if (this.registeredEvents_) {
+    for (var idx = 0; idx < this.registeredEvents_.length; idx++) {
+      var reg = this.registeredEvents_[idx];
+      Dygraph.removeEvent(reg.elem, reg.type, reg.fn);
+    }
   }
+
   this.registeredEvents_ = [];
 
   // remove mouse event handlers (This may not be necessary anymore)
@@ -1641,23 +1664,30 @@ Dygraph.prototype.findClosestRow = function(domX) {
  * Returns: {row, seriesName, point}
  * @private
  */
-Dygraph.prototype.findClosestPoint = function(domX, domY) {
+// [WIT] add forced setIdx to find only on this set.
+Dygraph.prototype.findClosestPoint = function(domX, domY, forcedSetIdx) {
   var minDist = Infinity;
   var idx = -1;
   var dist, dx, dy, point, closestPoint, closestSeries;
   for ( var setIdx = this.layout_.datasets.length - 1 ; setIdx >= 0 ; --setIdx ) {
-    var points = this.layout_.points[setIdx];
-    for (var i = 0; i < points.length; ++i) {
-      var point = points[i];
-      if (!Dygraph.isValidPoint(point)) continue;
-      dx = point.canvasx - domX;
-      dy = point.canvasy - domY;
-      dist = dx * dx + dy * dy;
-      if (dist < minDist) {
-        minDist = dist;
-        closestPoint = point;
-        closestSeries = setIdx;
-        idx = i;
+    // [WIT] pass no forced  set indexes.
+    if (!forcedSetIdx || (Dygraph.isArrayLike(forcedSetIdx) && forcedSetIdx.indexOf(setIdx) != -1)) {
+      var first = 0;
+      var points = this.layout_.points[setIdx];
+
+      for (var i = 0; i < points.length; ++i) {
+        var point = points[first + i];
+        if (!Dygraph.isValidPoint(point)) continue;
+        dx = point.canvasx - domX;
+        dy = point.canvasy - domY;
+        // [WIT] considering only x if forcedSetIdx is setup.
+        dist = dx * dx + (!forcedSetIdx ? dy * dy : 0);
+        if (dist < minDist) {
+          minDist = dist;
+          closestPoint = point;
+          closestSeries = setIdx;
+          idx = i;
+        }
       }
     }
   }
@@ -1669,20 +1699,49 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
   };
 };
 
+
 /**
- * Given canvas X,Y coordinates, find the touched area in a stacked graph.
- *
- * This first finds the X data point closest to the supplied DOM X coordinate,
- * then finds the series which puts the Y coordinate on top of its filled area,
- * using linear interpolation between adjacent point pairs.
- *
- * @param {Number} domX graph-relative DOM X coordinate
- * @param {Number} domY graph-relative DOM Y coordinate
- * Returns: {row, seriesName, point}
- * @private
- */
+* Given canvas X,Y coordinates, find the closest point in all set in forcedSetIdxes array.
+*
+* This finds the individual data point across all visible series
+* that's closest to the supplied DOM coordinates using the standard
+* Euclidean X,Y distance.
+*
+* @param {Number} domX graph-relative DOM X coordinate
+* @param {Number} domY graph-relative DOM Y coordinate
+* @param {Array} forced set indexes of series.
+* Returns: [{row, seriesName, point}]
+* @private
+*/
+// [WIT] forced setIdx to find only on this set.
+Dygraph.prototype.findAllClosestPoint = function(domX, domY, forcedSetIdxes) {
+
+  var allClosestPoint = [];
+  for (var i = 0; i < forcedSetIdxes.length; i++) {
+    var idx = forcedSetIdxes[i];
+    allClosestPoint.push(this.findClosestPoint(domX, domY, [idx]));
+  }
+  return allClosestPoint;
+};
+
+
+
+/**
+* Given canvas X,Y coordinates, find the touched area in a stacked graph.
+*
+* This first finds the X data point closest to the supplied DOM X coordinate,
+* then finds the series which puts the Y coordinate on top of its filled area,
+* using linear interpolation between adjacent point pairs.
+*
+* @param {Number} domX graph-relative DOM X coordinate
+* @param {Number} domY graph-relative DOM Y coordinate
+* Returns: {row, seriesName, point}
+* @private
+*/
 Dygraph.prototype.findStackedPoint = function(domX, domY) {
   var row = this.findClosestRow(domX);
+  //var first = this.layout_.setPointsOffsets[setIdx];
+  var first = 0;
   var boundary = this.getLeftBoundary_();
   var rowIdx = row - boundary;
   var closestPoint, closestSeries;
@@ -1694,7 +1753,7 @@ Dygraph.prototype.findStackedPoint = function(domX, domY) {
     var py = p1.canvasy;
     if (domX > p1.canvasx && rowIdx + 1 < points.length) {
       // interpolate series Y value using next point
-      var p2 = points[rowIdx + 1];
+      var p2 = points[first + rowIdx + 1];
       if (Dygraph.isValidPoint(p2)) {
         var dx = p2.canvasx - p1.canvasx;
         if (dx > 0) {
@@ -1704,7 +1763,7 @@ Dygraph.prototype.findStackedPoint = function(domX, domY) {
       }
     } else if (domX < p1.canvasx && rowIdx > 0) {
       // interpolate series Y value using previous point
-      var p0 = points[rowIdx - 1];
+      var p0 = points[first + rowIdx - 1];
       if (Dygraph.isValidPoint(p0)) {
         var dx = p1.canvasx - p0.canvasx;
         if (dx > 0) {
@@ -1744,15 +1803,35 @@ Dygraph.prototype.mouseMove_ = function(event) {
   var canvasy = canvasCoords[1];
 
   var highlightSeriesOpts = this.attr_("highlightSeriesOpts");
+
+  // [WIT] forced highlight series
+  var highlightSeries = this.attr_("highlightSeries");
+
   var selectionChanged = false;
-  if (highlightSeriesOpts && !this.isSeriesLocked()) {
+  if ((highlightSeriesOpts || (highlightSeries && highlightSeries.length > 0)) && !this.isSeriesLocked()) {
     var closest;
-    if (this.attr_("stackedGraph")) {
+    if (this.attr_("stackedGraph") && !highlightSeries) {
       closest = this.findStackedPoint(canvasx, canvasy);
     } else {
-      closest = this.findClosestPoint(canvasx, canvasy);
+      // [WIT] find closest point in highlight series only
+      var indexes = null;
+      if (highlightSeries && highlightSeries.length > 0) {
+        indexes = [];
+        for (var nameIdx = 0; nameIdx < highlightSeries.length; nameIdx++) {
+          var name = highlightSeries[nameIdx];
+          indexes.push(this.datasetIndexFromSetName_(name));
+        }
+      }
+
+      closest = this.findClosestPoint(canvasx, canvasy, indexes);
     }
-    selectionChanged = this.setSelection(closest.row, closest.seriesName);
+
+    if (highlightSeries && highlightSeries.length > 0) {
+      // [WIT] select the closest point in highlight series only
+      selectionChanged = this.setSelection(closest.row, highlightSeries);
+    } else {
+      selectionChanged = this.setSelection(closest.row, closest.seriesName);
+    }
   } else {
     var idx = this.findClosestRow(canvasx);
     selectionChanged = this.setSelection(idx);
@@ -1845,7 +1924,9 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
   // Clear the previously drawn vertical, if there is one
   var i;
   var ctx = this.canvas_ctx_;
-  if (this.attr_('highlightSeriesOpts')) {
+
+  // [WIT] highlight series.
+  if (this.attr_('highlightSeriesOpts') || (this.attr_('highlightSeries') && this.attr_('highlightSeries').length > 0)) {
     ctx.clearRect(0, 0, this.width_, this.height_);
     var alpha = 1.0 - this.attr_('highlightSeriesBackgroundAlpha');
     if (alpha) {
@@ -1861,13 +1942,32 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
         }
         alpha *= opt_animFraction;
       }
-      ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+
+      // [WIT] highlightSeriesBackgroundColor
+      //var RGBColor = RGBColor || function(){};
+      var bgColor = new RGBColorParser(this.attr_('highlightSeriesBackgroundColor'));
+
+      ctx.fillStyle = 'rgba(' + bgColor.r + ',' + bgColor.g + ',' + bgColor.b + ',' + alpha + ')';
       ctx.fillRect(0, 0, this.width_, this.height_);
     }
 
     // Redraw only the highlighted series in the interactive canvas (not the
     // static plot canvas, which is where series are usually drawn).
-    this.plotter_._renderLineChart(this.highlightSet_, ctx);
+    //this.plotter_._renderLineChart(this.highlightSet_, ctx);
+
+    // [WIT] process highlightSets_
+    if (this.highlightSets_) {
+      
+      for (var hsIdx = 0; hsIdx < this.highlightSets_.length; hsIdx++)  {
+        this.plotter_._renderLineChart(this.highlightSets_[hsIdx], ctx);
+      }
+      //_(this.highlightSets_).each(function(highlightSet) {
+      //  this.plotter_._renderLineChart(highlightSet, ctx);
+      //}, this);
+    } else {
+      this.plotter_._renderLineChart(this.highlightSet_, ctx);
+    }
+
   } else if (this.previousVerticalX_ >= 0) {
     // Determine the maximum highlight circle size.
     var maxCircleSize = 0;
@@ -1902,8 +2002,9 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
       ctx.lineWidth = this.attr_('strokeWidth', pt.name);
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
-      callback(this.g, pt.name, ctx, canvasx, pt.canvasy,
-          color, circleSize);
+
+      // [WIT] add pt in arguments list
+      callback(this, pt.name, ctx, canvasx, pt.canvasy, color, circleSize, pt);
     }
     ctx.restore();
 
@@ -1952,6 +2053,23 @@ Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked) {
     this.lastRow_ = -1;
   }
 
+  // [WIT] filter only forced series points in selection
+  if (Dygraph.isArrayLike( opt_seriesName )) {
+    var newSelPoints = [];
+    for (var selPointIdx = 0; selPointIdx < this.selPoints_.length; selPointIdx++) {
+      var selPoint = this.selPoints_[selPointIdx];
+      for (var nameIdx = 0; nameIdx < opt_seriesName.length; nameIdx++) {
+        var name = opt_seriesName[nameIdx];
+        if(name === selPoint.name) {
+          newSelPoints.push(selPoint);
+          break;
+        }
+      }
+    }
+
+    this.selPoints_ = newSelPoints;
+  } 
+
   if (this.selPoints_.length) {
     this.lastx_ = this.selPoints_[0].xval;
   } else {
@@ -1959,8 +2077,17 @@ Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked) {
   }
 
   if (opt_seriesName !== undefined) {
-    if (this.highlightSet_ !== opt_seriesName) changed = true;
-    this.highlightSet_ = opt_seriesName;
+    // [WIT] highlight only forced series.
+    if (Dygraph.isArrayLike(opt_seriesName)) {
+      if (this.highlightSets_ !== opt_seriesName) changed = true;
+      this.highlightSets_ = opt_seriesName;
+    } else {
+      if (this.highlightSet_ !== opt_seriesName) changed = true;
+      this.highlightSet_ = opt_seriesName;
+    }
+
+    //		if (this.highlightSet_ !== opt_seriesName) changed = true;
+    //		this.highlightSet_ = opt_seriesName;
   }
 
   if (opt_locked !== undefined) {
@@ -2082,13 +2209,13 @@ Dygraph.prototype.addXTicks_ = function() {
 };
 
 /**
- * @private
- * Computes the range of the data series (including confidence intervals).
- * @param { [Array] } series either [ [x1, y1], [x2, y2], ... ] or
- * [ [x1, [y1, dev_low, dev_high]], [x2, [y2, dev_low, dev_high]], ...
- * @return [low, high]
- */
-Dygraph.prototype.extremeValues_ = function(series) {
+* @private
+* Computes the range of the data series (including confidence intervals).
+* @param { [Array] } series either [ [x1, y1], [x2, y2], ... ] or
+* [ [x1, [y1, dev_low, dev_high]], [x2, [y2, dev_low, dev_high]], ...
+* @return [low, high]
+*/
+Dygraph.prototype.extremeValues_ = function(series, seriesName) {
   var minY = null, maxY = null, j, y;
 
   var bars = this.attr_("errorBars") || this.attr_("customBars");
@@ -2099,6 +2226,21 @@ Dygraph.prototype.extremeValues_ = function(series) {
       if (y === null || isNaN(y)) continue;
       var low = y - series[j][1][1];
       var high = y + series[j][1][2];
+      if (low > y) low = y;    // this can happen with custom bars,
+      if (high < y) high = y;  // e.g. in tests/custom-bars.html
+      if (maxY === null || high > maxY) {
+        maxY = high;
+      }
+      if (minY === null || low < minY) {
+        minY = low;
+      }
+    }
+  } else if (this.attr_("witBars", seriesName)) { // [WIT] get extrem for a witbars series
+    for (j = 0; j < series.length; j++) {
+      y = series[j][1][0];
+      if (y === null || isNaN(y)) continue;
+      var low = y - series[j][1][1]; // min
+      var high = y + series[j][1][2]; // max
       if (low > y) low = y;    // this can happen with custom bars,
       if (high < y) high = y;  // e.g. in tests/custom-bars.html
       if (maxY === null || high > maxY) {
@@ -2163,7 +2305,8 @@ Dygraph.prototype.predraw_ = function() {
     // var logScale = this.attr_('logscale', i); // TODO(klausw): this looks wrong // konigsberg thinks so too.
     var logScale = this.attr_('logscale');
     var series = this.extractSeries_(this.rawData_, i, logScale);
-    series = this.rollingAverage(series, this.rollPeriod_);
+    var labels = this.attr_('labels');
+    series = this.rollingAverage(series, this.rollPeriod_, labels[i]);
     this.rolledSeries_.push(series);
   }
 
@@ -2211,7 +2354,8 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
     // Prune down to the desired range, if necessary (for zooming)
     // Because there can be lines going to points outside of the visible area,
     // we actually prune to visible points, plus one on either side.
-    var bars = this.attr_("errorBars") || this.attr_("customBars");
+    var labels = this.attr_('labels');
+    var bars = this.attr_("errorBars") || this.attr_("customBars") || this.attr_("witBars", labels[i]);
     if (dateWindow) {
       var low = dateWindow[0];
       var high = dateWindow[1];
@@ -2228,26 +2372,48 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
         }
       }
       if (firstIdx === null) firstIdx = 0;
-      if (firstIdx > 0) firstIdx--;
+
+      // [WIT] [to publish] back to next valid index
+      while (firstIdx > 0 && Dygraph.isOK(series[firstIdx - 1][1])) {
+        if (firstIdx > 0) firstIdx--;
+      }
       if (lastIdx === null) lastIdx = series.length - 1;
-      if (lastIdx < series.length - 1) lastIdx++;
-      boundaryIds[i-1] = [firstIdx, lastIdx];
+
+      // [WIT] [to publish] go to next valid index
+      while (lastIdx < series.length - 1 && Dygraph.isOK(series[lastIdx + 1][1])) {
+        lastIdx++;
+      }
+
+      boundaryIds[i - 1] = [firstIdx, lastIdx];
       for (k = firstIdx; k <= lastIdx; k++) {
         pruned.push(series[k]);
       }
       series = pruned;
     } else {
-      boundaryIds[i-1] = [0, series.length-1];
+      boundaryIds[i - 1] = [0, series.length - 1];
     }
 
-    var seriesExtremes = this.extremeValues_(series);
+    // [WIT] get extremeValues by series.
+    var seriesExtremes = this.extremeValues_(series, labels[i]);
 
     if (bars) {
-      for (j=0; j<series.length; j++) {
-        series[j] = [series[j][0],
+      // [WIT] define temporary point to build the series
+      var pointOfSeries = [];
+      for (j = 0; j < series.length; j++) {
+
+        pointOfSeries = [series[j][0],
                      series[j][1][0],
                      series[j][1][1],
                      series[j][1][2]];
+
+        //[WIT] here we add other y-values
+        if (this.attr_("witBars", labels[i])) {
+          pointOfSeries.push(series[j][1][3]); // in
+          pointOfSeries.push(series[j][1][4]); // out
+          pointOfSeries.push(series[j][1][5]); // count
+        }
+
+        series[j] = pointOfSeries;
       }
     } else if (this.attr_("stackedGraph")) {
       var l = series.length;
@@ -2547,7 +2713,9 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
           if (maxAxisY > 0 && maxY <= 0) maxAxisY = 0;
         }
 
-        if (this.attr_("includeZero")) {
+        // [WIT] [to publish] fix include zero global value override the custom axis
+        //if (this.attr_("includeZero")) {
+        if (axis.includeZero) {
           if (maxY < 0) maxAxisY = 0;
           if (minY > 0) minAxisY = 0;
         }
@@ -2558,10 +2726,13 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
       // This is only set if the user has zoomed on the y-axis. It is never set
       // by a user. It takes precedence over axis.valueRange because, if you set
       // valueRange, you'd still expect to be able to pan.
+
       axis.computedValueRange = [axis.valueWindow[0], axis.valueWindow[1]];
     } else if (axis.valueRange) {
       // This is a user-set value range for this axis.
-      axis.computedValueRange = [axis.valueRange[0], axis.valueRange[1]];
+
+      // [WIT] [to publish] customize range to have auto min/ auto max.
+      axis.computedValueRange = [axis.valueRange[0] || axis.extremeRange[0], axis.valueRange[1] || axis.extremeRange[1]];
     } else {
       axis.computedValueRange = axis.extremeRange;
     }
@@ -2571,30 +2742,37 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
     // independent ticks, then that is permissible as well.
     var opts = this.optionsViewForAxis_('y' + (i ? '2' : ''));
     var ticker = opts('ticker');
-    if (i === 0 || axis.independentTicks) {
-      axis.ticks = ticker(axis.computedValueRange[0],
+
+    // [WIT] do not display ticks for axis more than 2.
+    if (i < 2) {
+
+      if (i === 0 || axis.independentTicks) {
+        axis.ticks = ticker(axis.computedValueRange[0],
                           axis.computedValueRange[1],
                           this.height_,  // TODO(danvk): should be area.height
                           opts,
                           this);
-    } else {
-      var p_axis = this.axes_[0];
-      var p_ticks = p_axis.ticks;
-      var p_scale = p_axis.computedValueRange[1] - p_axis.computedValueRange[0];
-      var scale = axis.computedValueRange[1] - axis.computedValueRange[0];
-      var tick_values = [];
-      for (var k = 0; k < p_ticks.length; k++) {
-        var y_frac = (p_ticks[k].v - p_axis.computedValueRange[0]) / p_scale;
-        var y_val = axis.computedValueRange[0] + y_frac * scale;
-        tick_values.push(y_val);
-      }
+      } else {
+        var p_axis = this.axes_[0];
+        var p_ticks = p_axis.ticks;
+        var p_scale = p_axis.computedValueRange[1] - p_axis.computedValueRange[0];
+        var scale = axis.computedValueRange[1] - axis.computedValueRange[0];
+        var tick_values = [];
+        for (var k = 0; k < p_ticks.length; k++) {
+          var y_frac = (p_ticks[k].v - p_axis.computedValueRange[0]) / p_scale;
+          var y_val = axis.computedValueRange[0] + y_frac * scale;
+          tick_values.push(y_val);
+        }
 
-      axis.ticks = ticker(axis.computedValueRange[0],
+        axis.ticks = ticker(axis.computedValueRange[0],
                           axis.computedValueRange[1],
                           this.height_,  // TODO(danvk): should be area.height
                           opts,
                           this,
                           tick_values);
+      }
+    } else {
+      axis.ticks = [];
     }
   }
 };
@@ -2627,20 +2805,23 @@ Dygraph.prototype.extractSeries_ = function(rawData, i, logScale) {
   return series;
 };
 
+
 /**
- * @private
- * Calculates the rolling average of a data set.
- * If originalData is [label, val], rolls the average of those.
- * If originalData is [label, [, it's interpreted as [value, stddev]
- *   and the roll is returned in the same form, with appropriately reduced
- *   stddev for each value.
- * Note that this is where fractional input (i.e. '5/10') is converted into
- *   decimal values.
- * @param {Array} originalData The data in the appropriate format (see above)
- * @param {Number} rollPeriod The number of points over which to average the
- *                            data
- */
-Dygraph.prototype.rollingAverage = function(originalData, rollPeriod) {
+* @private
+* Calculates the rolling average of a data set.
+* If originalData is [label, val], rolls the average of those.
+* If originalData is [label, [, it's interpreted as [value, stddev]
+*   and the roll is returned in the same form, with appropriately reduced
+*   stddev for each value.
+* Note that this is where fractional input (i.e. '5/10') is converted into
+*   decimal values.
+* @param {Array} originalData The data in the appropriate format (see above)
+* @param {Number} rollPeriod The number of points over which to average the
+*                            data
+*/
+
+// [WIT]parse data by wit trace type : add series id parameter
+Dygraph.prototype.rollingAverage = function(originalData, rollPeriod, seriesId) {
   if (originalData.length < 2)
     return originalData;
   rollPeriod = Math.min(rollPeriod, originalData.length);
@@ -2717,6 +2898,21 @@ Dygraph.prototype.rollingAverage = function(originalData, rollPeriod) {
       } else {
         rollingData[i] = [originalData[i][0], [null, null, null]];
       }
+    }
+  } else if (this.attr_("witBars", seriesId)) {
+    for (i = 0; i < originalData.length; i++) {
+      var data = originalData[i][1];
+      y = data[1];
+      //[WIT] transfer the wit data in rolling data
+      var rollingDataTemp = [originalData[i][0], [y, y - data[0], data[2] - y]];
+
+      // [WIT] store wit values on point.
+      rollingDataTemp[1].push(data[3]);
+      rollingDataTemp[1].push(data[4]);
+      rollingDataTemp[1].push(data[5]);
+
+      rollingData[i] = rollingDataTemp;
+
     }
   } else {
     // Calculate the rolling average for the first rollPeriod - 1 points where
@@ -3419,11 +3615,13 @@ Dygraph.prototype.visibility = function() {
   // Do lazy-initialization, so that this happens after we know the number of
   // data series.
   if (!this.attr_("visibility")) {
+    // [WIT] change visibility assignment
     this.attrs_.visibility = [];
   }
   // TODO(danvk): it looks like this could go into an infinite loop w/ user_attrs.
   while (this.attr_("visibility").length < this.numColumns() - 1) {
-    this.attrs_.visibility.push(true);
+    // [WIT] change visibility push
+    this.attr_("visibility").push(true);
   }
   return this.attr_("visibility");
 };

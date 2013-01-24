@@ -56,6 +56,11 @@ AxisLabelsTestCase.prototype.testMinusOneToOne = function() {
 
   g.setSelection(0);
   assertEquals('0: Y:-1', Util.getLegend());
+
+  // [WIT] test with custom legend:
+  g.updateOptions({ withWITLegend: true });
+  g.setSelection(0);
+  assertEquals('legend: ...no selection', getLegend());
 };
 
 AxisLabelsTestCase.prototype.testSmallRangeNearZero = function() {
