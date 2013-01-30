@@ -975,23 +975,23 @@ Dygraph.prototype.createInterface_ = function() {
   };
   this.addEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler);
 
+
   this.mouseOutHandler = function(e) {
     dygraph.mouseOut_(e);
   };
   this.addEvent(this.mouseEventElement_, 'mouseout', this.mouseOutHandler);
 
-  // [WIT] remove event before adding.
-  if (this.resizeHandler) {
-    Dygraph.removeEvent(window, 'resize', this.resizeHandler);
-  }
-  
-   this.resizeHandler = function(e) {
-    dygraph.resize();
-  };
+  // [WIT] add event only the first time.
+  if (!this.resizeHandler) {
 
-  // Update when the window is resized.
-  // TODO(danvk): drop frames depending on complexity of the chart.
-  this.addEvent(window, 'resize', this.resizeHandler);
+    this.resizeHandler = function(e) {
+      dygraph.resize();
+    };
+
+    // Update when the window is resized.
+    // TODO(danvk): drop frames depending on complexity of the chart.
+    this.addEvent(window, 'resize', this.resizeHandler);
+  }
 };
 
 /**
@@ -1021,6 +1021,9 @@ Dygraph.prototype.destroy = function() {
   Dygraph.removeEvent(this.mouseEventElement_, 'mouseout', this.mouseOutHandler);
   Dygraph.removeEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler);
   Dygraph.removeEvent(this.mouseEventElement_, 'mousemove', this.mouseUpHandler_);
+  this.mouseOutHandler = null;
+  this.mouseMoveHandler = null;
+  this.mouseUpHandler_ = null;
   removeRecursive(this.maindiv_);
 
   var nullOut = function(obj) {
@@ -2614,17 +2617,10 @@ Dygraph.prototype.computeYAxes_ = function() {
   }
 
   for (axis = 0; axis < this.axes_.length; axis++) {
-    if (axis === 0) {
-      opts = this.optionsViewForAxis_('y' + (axis ? '2' : ''));
-      v = opts("valueRange");
-      if (v) this.axes_[axis].valueRange = v;
-    } else {  // To keep old behavior
-      var axes = this.user_attrs_.axes;
-      if (axes && axes.y2) {
-        v = axes.y2.valueRange;
-        if (v) this.axes_[axis].valueRange = v;
-      }
-    }
+    // [WIT] allow more than 2 axes. (old behavior is forbidden.
+    opts = this.optionsViewForAxis_(DygraphOptions.axisToString_(axis));
+    v = opts("valueRange");
+    if (v) this.axes_[axis].valueRange = v;
   }
 };
 
@@ -2713,7 +2709,8 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
           if (maxAxisY > 0 && maxY <= 0) maxAxisY = 0;
         }
 
-        // [WIT] [to publish] fix include zero global value override the custom axis
+        // [WIT] fix include zero global value override the custom axis
+        // [WIT] TODO remove it because it's useless with the new option axes ans series.
         //if (this.attr_("includeZero")) {
         if (axis.includeZero) {
           if (maxY < 0) maxAxisY = 0;
@@ -2732,7 +2729,10 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
       // This is a user-set value range for this axis.
 
       // [WIT] [to publish] customize range to have auto min/ auto max.
-      axis.computedValueRange = [axis.valueRange[0] || axis.extremeRange[0], axis.valueRange[1] || axis.extremeRange[1]];
+      axis.computedValueRange = [
+        !isNaN(axis.valueRange[0]) ? axis.valueRange[0] : axis.extremeRange[0],
+        !isNaN(axis.valueRange[1]) ? axis.valueRange[1] : axis.extremeRange[1]
+      ];
     } else {
       axis.computedValueRange = axis.extremeRange;
     }

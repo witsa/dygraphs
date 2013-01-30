@@ -426,6 +426,14 @@ DygraphCanvasRenderer.prototype._updatePoints = function() {
       var point = points[j];
       point.canvasx = this.area.w * point.x + this.area.x;
       point.canvasy = this.area.h * point.y + this.area.y;
+
+      // [WIT] setup in and out canvas y values
+      if (this.dygraph_.attr_('witBars', point.name)) {
+        point.canvasyIn = this.area.h * point.yIn + this.area.y;
+        point.canvasyOut = this.area.h * point.yOut + this.area.y;
+        point.canvasyMin = this.area.h * point.y_bottom + this.area.y;
+        point.canvasyMax = this.area.h * point.y_top + this.area.y;
+      }
     }
   }
 };

@@ -49,26 +49,43 @@ var DygraphOptions = function(dygraph) {
  * Not optimal, but does the trick when you're only using two axes.
  * If we move to more axes, this can just become a function.
  */
-DygraphOptions.AXIS_STRING_MAPPINGS_ = {
-  'y' : 0,
-  'Y' : 0,
-  'y1' : 0,
-  'Y1' : 0,
-  'y2' : 1,
-  'Y2' : 1
+  // [WIT] change AXIS_STRING_MAPPINGS_ to a function for allowing more than 2 axes.
+DygraphOptions.axisStringMapping = function(str){
+  var num = null;
+  if (typeof (str) == 'string' && str.length > 0) {
+    // remove 'y'
+    var numStr = str.substring(1);
+    if (numStr.length == 0) {
+      // str is 'y':
+      num = 0;
+    } else {
+
+      // parse the string into num
+      num = parseInt(numStr, 10);
+
+      if (!isNaN(num)) {
+        // str is 'yN':
+        num = num - 1;
+      }
+    }
+  }
+
+  return num;
 };
 
 DygraphOptions.axisToIndex_ = function(axis) {
-  if (typeof(axis) == "string") {
-    if (DygraphOptions.AXIS_STRING_MAPPINGS_.hasOwnProperty(axis)) {
-      return DygraphOptions.AXIS_STRING_MAPPINGS_[axis];
+  if (typeof (axis) == "string") {
+    // [WIT] Allow more than 2 axes.
+    if (DygraphOptions.axisStringMapping(axis) !== null) {
+      return DygraphOptions.axisStringMapping(axis);
     }
     throw "Unknown axis : " + axis;
   }
-  if (typeof(axis) == "number") {
-    if (axis === 0 || axis === 1) {
+  if (typeof (axis) == "number") {
+    // [WIT] allow more than 2 axes.
+    //if (axis === 0 || axis === 1) {
       return axis;
-    }
+    //}
     throw "Dygraphs only supports two y-axes, indexed from 0-1.";
   }
   if (typeof(axis) == "object") {
@@ -81,6 +98,11 @@ DygraphOptions.axisToIndex_ = function(axis) {
   // No axis specification means axis 0.
   return 0;
 };
+
+  // [WIT]  Allow more than 2 axes.
+DygraphOptions.axisToString_ = function(axis) {
+  return 'y' + (axis == 0 ? '' : (axis + 1).toString());
+}
 
 /**
  * Reparses options that are all related to series. This typically occurs when
@@ -185,10 +207,13 @@ DygraphOptions.prototype.reparseSeries = function() {
   }
 
   var axis_opts = this.user_["axes"] || {};
-  Dygraph.update(this.yAxes_[0].options, axis_opts["y"] || {});
-  if (this.yAxes_.length > 1) {
-    Dygraph.update(this.yAxes_[1].options, axis_opts["y2"] || {});
+
+  // [WIT] allow more than 2 axes:
+  for (var idx = 0; idx <this.yAxes_.length; idx++) {
+    var axisStr = DygraphOptions.axisToString_(idx);
+    Dygraph.update(this.yAxes_[idx].options, axis_opts[axisStr] || {});
   }
+
   Dygraph.update(this.xAxis_.options, axis_opts["x"] || {});
 };
 
@@ -237,18 +262,22 @@ DygraphOptions.prototype.getForAxis = function(name, axis) {
   // Since axis can be a number or a string, straighten everything out here.
   if (typeof(axis) == 'number') {
     axisIdx = axis;
-    axisString = axisIdx == 0 ? "y" : "y2";
+
+    // [WIT] (to publish) more coherent to call axisToIndex_
+    axisString = DygraphOptions.axisToString_(axis);
   } else {
     if (axis == "y1") { axis = "y"; } // Standardize on 'y'. Is this bad? I think so.
-    if (axis == "y") {
-      axisIdx = 0;
-    } else if (axis == "y2") {
-      axisIdx = 1;
-    } else if (axis == "x") {
+
+    // WIT (to publish) test first x axis
+    if (axis == "x") {
       axisIdx = -1; // simply a placeholder for below.
     } else {
-      throw "Unknown axis " + axis;
+      axisIdx = DygraphOptions.axisStringMapping(axis);
+      if (axisIdx === null) {
+        throw "Unknown axis " + axis;
+      }
     }
+
     axisString = axis;
   }
 
@@ -269,6 +298,12 @@ DygraphOptions.prototype.getForAxis = function(name, axis) {
   }
 
   // Default axis options third.
+
+  // [WIT] allow more than 2 axes:
+  if (axisIdx == 2) {
+    axisString = 'y2';
+  }
+
   var defaultAxisOptions = Dygraph.DEFAULT_ATTRS.axes[axisString];
   if (defaultAxisOptions.hasOwnProperty(name)) {
     return defaultAxisOptions[name];
