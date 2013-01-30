@@ -57,7 +57,8 @@ stackedTestCase.prototype.testCorrectColors = function() {
   };
 
   // 38 = round(0.15 * 255)
-  assertEquals([0, 255, 0, 38], getPixel(imageData, 200, 250));
+  //for (var i = 0; i < 300; i++) console.log(i + ': ' + getPixel(imageData, 200, i));
+  assertEquals([0, 255, 0, 38], getPixel(imageData, 200, 170));
   assertEquals([0, 0, 255, 38], getPixel(imageData, 200, 290));
 };
 
