@@ -111,7 +111,9 @@ Dygraph.KMG2_SMALL_LABELS = [ 'm', 'u', 'n', 'p', 'f', 'a', 'z', 'y' ];
  * @param {String} name The name of the point's data series
  * @param {Dygraph} g The dygraph object
  */
-Dygraph.numberValueFormatter = function(x, opts, pt, g) {
+
+// [WIT] permute arguments
+Dygraph.numberValueFormatter = function(x, pt, opts,  g) {
   var sigFigs = opts('sigFigs');
 
   if (sigFigs !== null) {
@@ -182,8 +184,9 @@ Dygraph.numberValueFormatter = function(x, opts, pt, g) {
  * variant for use as an axisLabelFormatter.
  * @private
  */
-Dygraph.numberAxisLabelFormatter = function(x, granularity, opts, g) {
-  return Dygraph.numberValueFormatter(x, opts, g);
+Dygraph.numberAxisLabelFormatter = function (x, granularity, opts, g) {
+  // [WIT] fix parameters
+  return Dygraph.numberValueFormatter(x, granularity, opts, g);
 };
 
 /**

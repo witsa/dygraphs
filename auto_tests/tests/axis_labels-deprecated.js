@@ -117,14 +117,18 @@ DeprecatedAxisLabelsTestCase.prototype.testDeprecatedValueFormatter = function (
   var opts = {
     width: 480,
     height: 320,
-    xValueFormatter: function(x, opts, series_name, dg) {
+    
+    // [WIT] permute parameters.
+    xValueFormatter: function(x, series_name, opts, dg) {
       assertEquals('number', typeof(x));
       assertEquals('function', typeof(opts));
       assertEquals('string', typeof(series_name));
       assertEquals('[Dygraph graph]', dg.toString());
       return 'x' + x;
     },
-    yValueFormatter: function(y, opts, series_name, dg) {
+    
+    // [WIT] permute parameters.
+    yValueFormatter: function(y, series_name, opts, dg) {
       assertEquals('number', typeof(y));
       assertEquals('function', typeof(opts));
       assertEquals('string', typeof(series_name));
@@ -154,14 +158,18 @@ DeprecatedAxisLabelsTestCase.prototype.testDeprecatedDateValueFormatter = functi
   var opts = {
     width: 480,
     height: 320,
-    xValueFormatter: function(x, opts, series_name, dg) {
+    
+    // [WIT] permute parameters.
+    xValueFormatter: function(x, series_name, opts, dg) {
       assertEquals('number', typeof(x));
       assertEquals('function', typeof(opts));
       assertEquals('string', typeof(series_name));
       assertEquals('[Dygraph graph]', dg.toString());
       return 'x' + new Date(x).strftime('%Y/%m/%d');
     },
-    yValueFormatter: function(y, opts, series_name, dg) {
+    
+    // [WIT] permute parameters.
+    yValueFormatter: function(y, series_name, opts, dg) {
       assertEquals('number', typeof(y));
       assertEquals('function', typeof(opts));
       assertEquals('string', typeof(series_name));

@@ -249,7 +249,8 @@ AxisLabelsTestCase.prototype.testValueFormatter = function () {
     height: 320,
     axes : {
       x : {
-        valueFormatter: function(x, opts, series_name, dg) {
+      // [WIT] permute parameters
+        valueFormatter: function(x, series_name, opts, dg) {
           assertEquals('number', typeof(x));
           assertEquals('function', typeof(opts));
           assertEquals('string', typeof(series_name));
@@ -258,7 +259,8 @@ AxisLabelsTestCase.prototype.testValueFormatter = function () {
         }
       },
       y : {
-        valueFormatter: function(y, opts, series_name, dg) {
+      // [WIT] permute parameters
+        valueFormatter: function(y, series_name, opts, dg) {
           assertEquals('number', typeof(y));
           assertEquals('function', typeof(opts));
           assertEquals('string', typeof(series_name));
@@ -292,7 +294,8 @@ AxisLabelsTestCase.prototype.testDateValueFormatter = function () {
     height: 320,
     axes : {
       x : {
-        valueFormatter: function(x, opts, series_name, dg) {
+      // [WIT] permute parameters
+        valueFormatter: function(x, series_name, opts, dg) {
           assertEquals('number', typeof(x));
           assertEquals('function', typeof(opts));
           assertEquals('string', typeof(series_name));
@@ -301,7 +304,8 @@ AxisLabelsTestCase.prototype.testDateValueFormatter = function () {
         }
       },
       y : {
-        valueFormatter: function(y, opts, series_name, dg) {
+      // [WIT] permute parameters
+        valueFormatter: function(y, series_name, opts, dg) {
           assertEquals('number', typeof(y));
           assertEquals('function', typeof(opts));
           assertEquals('string', typeof(series_name));

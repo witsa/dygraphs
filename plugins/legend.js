@@ -323,7 +323,7 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
       var series = g.getPropertiesForSeries(pt.name);
       var yOptView = yOptViews[series.axis - 1];
       var fmtFunc = yOptView('valueFormatter');
-      var yval = fmtFunc(pt.yval, yOptView, pt.name, g);
+      var yval = fmtFunc(pt.yval, pt.name, yOptView, g);
       var label = yval;
       var cls = (pt.name == highlightSeries) ? " class='highlight'" : "";
       var seriesTypeHtml = '';
@@ -353,7 +353,7 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
       html += "<tr" + cls + '>' + '<td style="padding:1px 3px 1px 0; vertical-align: middle; position:relative;">' +
         '<div style="border: 1px solid #444;border-radius: 3px; width:16px; height:16px; background-color:' +
         series.color + '"></div>' + seriesTypeHtml + '</td><td style="padding-left:8px; width:100%;"><b><span style="'+ nameStyle +'">' +
-        pt.name + '</span></b></td><td style="text-align:right;">' + label + '</td><td>' + unit + '</td></tr>';
+        pt.name + '</span></b></td><td style="text-align:right;">' + label + '</td><td style="white-space:nowrap;">' + unit + '</td></tr>';
     }
 
     html += '</table>';
