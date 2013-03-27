@@ -266,7 +266,7 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
 
       // TODO(danvk): use a template string here and make it an attribute.
       html += "<span" + cls + ">" + " <b><span style='color: " + series.color + ";'>" +
-          pt.name + "</span></b>:" + yval + "</span>";
+        pt.name + "</span></b>:&nbsp;" + yval + "</span>";
     }
     return html;
 
@@ -323,7 +323,7 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
       var series = g.getPropertiesForSeries(pt.name);
       var yOptView = yOptViews[series.axis - 1];
       var fmtFunc = yOptView('valueFormatter');
-      var yval = fmtFunc(pt.yval, pt.name, yOptView, g);
+      var yval = fmtFunc(pt.yval, yOptView, pt.name, g);
       var label = yval;
       var cls = (pt.name == highlightSeries) ? " class='highlight'" : "";
       var seriesTypeHtml = '';
@@ -331,12 +331,17 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
       var seriesTypeStyle = 'style="-webkit-box-shadow:1px 1px 3px #aaa; box-shadow: 1px 1px 3px #aaa; ' +
         'font-size:11px; font-weight:bold; padding:0 2px; border-radius:3px; border:solid 1px #888; ' +
         'background-color:rgba(255,255,255,0.8); position:absolute; bottom:-4px; right:-7px; z-index:1;"';
-      if (metadatas[pt.name].type.key === 'BOOLEAN') {
+      if (metadatas && metadatas[pt.name].type.key === 'BOOLEAN') {
         seriesTypeHtml = '<div ' + seriesTypeStyle + '>0|1</div>';
       }
 
-      if (metadatas[pt.name].type.key === 'DIFFERENTIAL') {
+      if (metadatas && metadatas[pt.name].type.key === 'DIFFERENTIAL') {
         seriesTypeHtml = '<div ' + seriesTypeStyle + '>&Delta;</div>';
+      }
+      
+      var unit = '';
+      if (metadatas){
+        unit = metadatas[pt.name].unit;
       }
 
       var nameStyle = '';
@@ -348,7 +353,7 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
       html += "<tr" + cls + '>' + '<td style="padding:1px 3px 1px 0; vertical-align: middle; position:relative;">' +
         '<div style="border: 1px solid #444;border-radius: 3px; width:16px; height:16px; background-color:' +
         series.color + '"></div>' + seriesTypeHtml + '</td><td style="padding-left:8px; width:100%;"><b><span style="'+ nameStyle +'">' +
-        pt.name + '</span></b></td><td style="text-align:right;">' + label + '</td><td>' + metadatas[pt.name].unit + '</td></tr>';
+        pt.name + '</span></b></td><td style="text-align:right;">' + label + '</td><td>' + unit + '</td></tr>';
     }
 
     html += '</table>';

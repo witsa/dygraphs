@@ -408,6 +408,13 @@ new Dygraph(el, data, {
 
     <p>Most browsers will ignore the trailing comma, but it will break under IE.</p>
 
+    <p>You may also need to delay instantiating any dygraphs until after the DOM
+    content is ready, as there have been some <a
+      href="https://groups.google.com/d/topic/dygraphs-users/qPX4Syx2kz8/discussion">reports</a>
+    that excanvas won't work until this happens. If you're using jQuery, this
+    means drawing your charts inside of a <code>$(function() { ... })</code>
+    block.</p>
+
     <h2 id="gviz">GViz Data</h2>
 
     <p>The <a
@@ -684,6 +691,9 @@ public static native JavaScriptObject drawDygraph(
     viewer.  Uses an extension for exporting the plots as PNG images
     (<a href="http://cavorite.com/labs/js/dygraphs-export/">[1]</a>, <a href="https://github.com/cavorite/dygraphs">[2]</a>).
     </span></li>
+
+    <li><a href="http://www.glerl.noaa.gov/data/now/wlevels/dbd/altSite.html">NOAA Great Lakes Water Level Dashboard</a><br/>
+    <span class="desc">The Great Lakes Water Level dashboard was designed to help users view, understand, and compare Great Lakes surface water elevation data and forecasts from a variety of different sources, and across a variety of time scales ranging from monthly average values, to annual and multi-decadal values. First developed in Adobe Flash, a HTML 5 compatible version has been in the works and a functional draft is available here.</span></li>
 
     </ul>
 
