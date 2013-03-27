@@ -314,6 +314,7 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
     }
     var showZeros = g.getOption("labelsShowZeroValues");
     var highlightSeries = g.getHighlightSeries();
+    var metadatas =  g.getOption('metadatas');
     for (i = 0; i < sel_points.length; i++) {
       var pt = sel_points[i];
       if (pt.yval === 0 && !showZeros) continue;
@@ -325,12 +326,29 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
       var yval = fmtFunc(pt.yval, pt.name, yOptView, g);
       var label = yval;
       var cls = (pt.name == highlightSeries) ? " class='highlight'" : "";
+      var seriesTypeHtml = '';
 
+      var seriesTypeStyle = 'style="-webkit-box-shadow:1px 1px 3px #aaa; box-shadow: 1px 1px 3px #aaa; ' +
+        'font-size:11px; font-weight:bold; padding:0 2px; border-radius:3px; border:solid 1px #888; ' +
+        'background-color:rgba(255,255,255,0.8); position:absolute; bottom:-4px; right:-7px; z-index:1;"';
+      if (metadatas[pt.name].type.key === 'BOOLEAN') {
+        seriesTypeHtml = '<div ' + seriesTypeStyle + '>0|1</div>';
+      }
+
+      if (metadatas[pt.name].type.key === 'DIFFERENTIAL') {
+        seriesTypeHtml = '<div ' + seriesTypeStyle + '>&Delta;</div>';
+      }
+
+      var nameStyle = '';
+      ////if (metadatas[pt.name].isMouseOver) {
+      ////  nameStyle = 'color: #fff; background-color:#7a73ac; border-radius:3px;';
+      ////}
+        
       // TODO(danvk): use a template string here and make it an attribute.
-      html += "<tr" + cls + '>' + '<td style="padding:1px 3px 1px 0; vertical-align: middle;">' +
-        '<div style="border: 1px solid #444;border-radius: 3px; width:15px; height:15px; background-color:' +
-        series.color + '"></div></td><td style="width:100%;"><b><span>' +
-        pt.name + '</span></b></td><td style="text-align:right;">' + label + "</td></tr>";
+      html += "<tr" + cls + '>' + '<td style="padding:1px 3px 1px 0; vertical-align: middle; position:relative;">' +
+        '<div style="border: 1px solid #444;border-radius: 3px; width:16px; height:16px; background-color:' +
+        series.color + '"></div>' + seriesTypeHtml + '</td><td style="padding-left:8px; width:100%;"><b><span style="'+ nameStyle +'">' +
+        pt.name + '</span></b></td><td style="text-align:right;">' + label + '</td><td>' + metadatas[pt.name].unit + '</td></tr>';
     }
 
     html += '</table>';

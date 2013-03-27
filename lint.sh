@@ -19,7 +19,7 @@ if [ $# -gt 1 ]; then
 fi
 
 if [ $# -eq 0 ]; then
-  files=$(ls dygraph*.js plugins/*.js | grep -v combined | grep -v dev.js| grep -v externs)
+  files=$(ls dygraph*.js plugins/*.js | grep -v combined | grep -v dev.js| grep -v dev-wit.js| grep -v externs)
 else
   files=$1
 fi

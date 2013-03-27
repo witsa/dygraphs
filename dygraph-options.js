@@ -55,7 +55,7 @@ DygraphOptions.axisStringMapping = function(str){
   if (typeof (str) == 'string' && str.length > 0) {
     // remove 'y'
     var numStr = str.substring(1);
-    if (numStr.length == 0) {
+    if (numStr.length === 0) {
       // str is 'y':
       num = 0;
     } else {
@@ -86,7 +86,7 @@ DygraphOptions.axisToIndex_ = function(axis) {
     //if (axis === 0 || axis === 1) {
       return axis;
     //}
-    throw "Dygraphs only supports two y-axes, indexed from 0-1.";
+    //throw "Dygraphs only supports two y-axes, indexed from 0-1.";
   }
   if (typeof(axis) == "object") {
     throw "Using objects for axis specification " +
@@ -101,8 +101,8 @@ DygraphOptions.axisToIndex_ = function(axis) {
 
   // [WIT]  Allow more than 2 axes.
 DygraphOptions.axisToString_ = function(axis) {
-  return 'y' + (axis == 0 ? '' : (axis + 1).toString());
-}
+  return 'y' + (axis === 0 ? '' : (axis + 1).toString());
+};
 
 /**
  * Reparses options that are all related to series. This typically occurs when
@@ -211,7 +211,11 @@ DygraphOptions.prototype.reparseSeries = function() {
   // [WIT] allow more than 2 axes:
   for (var idx = 0; idx <this.yAxes_.length; idx++) {
     var axisStr = DygraphOptions.axisToString_(idx);
-    Dygraph.update(this.yAxes_[idx].options, axis_opts[axisStr] || {});
+
+    // [WIT] allow more than 2 axes (gap in axis indexes)
+    if (this.yAxes_.hasOwnProperty(idx)) {
+      Dygraph.update(this.yAxes_[idx].options, axis_opts[axisStr] || {});
+    }
   }
 
   Dygraph.update(this.xAxis_.options, axis_opts["x"] || {});
@@ -224,7 +228,7 @@ DygraphOptions.prototype.reparseSeries = function() {
  */
 DygraphOptions.prototype.get = function(name) {
   var result = this.getGlobalUser_(name);
-  if (result != null) {
+  if (result !== null) {
     return result;
   }
   return this.getGlobalDefault_(name);
@@ -293,15 +297,15 @@ DygraphOptions.prototype.getForAxis = function(name, axis) {
 
   // User-specified global options second.
   var result = this.getGlobalUser_(name);
-  if (result != null) {
+  if (result !== null) {
     return result;
   }
 
   // Default axis options third.
 
   // [WIT] allow more than 2 axes:
-  if (axisIdx == 2) {
-    axisString = 'y2';
+  if (axisIdx >= 2) {
+    axisString = "y2";
   }
 
   var defaultAxisOptions = Dygraph.DEFAULT_ATTRS.axes[axisString];
@@ -361,14 +365,24 @@ DygraphOptions.prototype.axisForSeries = function(series) {
  */
 // TODO(konigsberg): this is y-axis specific. Support the x axis.
 DygraphOptions.prototype.axisOptions = function(yAxis) {
-  return this.yAxes_[yAxis].options;
+  // [WIT] allow more than 2 axes (gap in axis indexes)
+  if (this.yAxes_.hasOwnProperty(yAxis)) {
+    return this.yAxes_[yAxis].options;
+  } else {
+    return null;
+  }
 };
 
 /**
  * Return the series associated with an axis.
  */
 DygraphOptions.prototype.seriesForAxis = function(yAxis) {
+  // [WIT] allow more than 2 axes (gap in axis indexes)
+  if (this.yAxes_.hasOwnProperty(yAxis)) {
   return this.yAxes_[yAxis].series;
+  } else {
+    return null;
+  }
 };
 
 /**

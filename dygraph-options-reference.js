@@ -64,6 +64,13 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     ],
     "description": "Draw a custom item when drawPoints is enabled. Default is a small dot matching the series color. This method should constrain drawing to within pointSize pixels from (cx, cy).  Also see <a href='#drawHighlightPointCallback'>drawHighlightPointCallback</a>"
   },
+  // [WIT] define allow2DPan parameter.
+  "allow2DPan" : {
+    "default" : "true",
+    "labels": ["Data Line display"],
+    "type": "boolean",
+    "description": "Allow user to vertically and horizontally pan. If it's false, user can pan horizontally only."
+  },
   // [WIT] define panCallback parameter.
   "panCallback": {
     "default": "null",
@@ -156,6 +163,13 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     "labels": ["Interactive Elements"],
     "type": "float",
     "description": "Fade the background while highlighting series. 1=fully visible background (disable fading), 0=hiddden background (show highlighted series only)."
+  },
+  // [WIT] define metadatas
+  "metadatas": {
+    "default": "null",
+    "labels": ["Interactive Elements"],
+    "type": "array<Object>",
+    "description": "Metadatas contains for each series an object that defines some extra properties."
   },
   // [WIT] define highlightSeries
   "highlightSeries": {
