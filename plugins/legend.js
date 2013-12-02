@@ -331,12 +331,16 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
       var seriesTypeStyle = 'style="-webkit-box-shadow:1px 1px 3px #aaa; box-shadow: 1px 1px 3px #aaa; ' +
         'font-size:11px; font-weight:bold; padding:0 2px; border-radius:3px; border:solid 1px #888; ' +
         'background-color:rgba(255,255,255,0.8); position:absolute; bottom:-4px; right:-7px; z-index:1;"';
-      if (metadatas && metadatas[pt.name].type.key === 'BOOLEAN') {
+      if (metadatas && metadatas[pt.name].type.key === 'DIGITAL') {
         seriesTypeHtml = '<div ' + seriesTypeStyle + '>0|1</div>';
       }
 
       if (metadatas && metadatas[pt.name].type.key === 'DIFFERENTIAL') {
         seriesTypeHtml = '<div ' + seriesTypeStyle + '>&Delta;</div>';
+      }
+
+      if (metadatas && metadatas[pt.name].type.key === 'RATE') {
+        seriesTypeHtml = '<div ' + seriesTypeStyle + '>&Delta;/t</div>';
       }
       
       var unit = '';
