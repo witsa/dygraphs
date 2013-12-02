@@ -23,7 +23,13 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     "default": "false",
     "labels": ["Data Line display"],
     "type": "boolean",
-    "description": "If set, stack series on top of one another rather than drawing them independently. The first series specified in the input data will wind up on top of the chart and the last will be on bottom."
+    "description": "If set, stack series on top of one another rather than drawing them independently. The first series specified in the input data will wind up on top of the chart and the last will be on bottom. NaN values are drawn as white areas without a line on top, see stackedGraphNaNFill for details."
+  },
+  "stackedGraphNaNFill": {
+    "default": "all",
+    "labels": ["Data Line display"],
+    "type": "string",
+    "description": "Controls handling of NaN values inside a stacked graph. NaN values are interpolated/extended for stacking purposes, but the actual point value remains NaN in the legend display. Valid option values are \"all\" (interpolate internally, repeat leftmost and rightmost value as needed), \"inside\" (interpolate internally only, use zero outside leftmost and rightmost value), and \"none\" (treat NaN as zero everywhere)."
   },
   "pointSize": {
     "default": "1",
@@ -60,7 +66,8 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
       [ "cx" , "center x coordinate" ],
       [ "cy" , "center y coordinate" ],
       [ "color" , "series color" ],
-      [ "pointSize" , "the radius of the image." ]
+      [ "pointSize" , "the radius of the image." ],
+      [ "idx" , "the row-index of the point in the data."]
     ],
     "description": "Draw a custom item when drawPoints is enabled. Default is a small dot matching the series color. This method should constrain drawing to within pointSize pixels from (cx, cy).  Also see <a href='#drawHighlightPointCallback'>drawHighlightPointCallback</a>"
   },
@@ -129,7 +136,8 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
       [ "cx" , "center x coordinate" ],
       [ "cy" , "center y coordinate" ],
       [ "color" , "series color" ],
-      [ "pointSize" , "the radius of the image." ]
+      [ "pointSize" , "the radius of the image." ],
+      [ "idx" , "the row-index of the point in the data."]
     ],
     "description": "Draw a custom item when a point is highlighted.  Default is a small dot matching the series color. This method should constrain drawing to within pointSize pixels from (cx, cy) Also see <a href='#drawPointCallback'>drawPointCallback</a>"
   },
@@ -408,7 +416,7 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     "default": "rgb(128,128,128)",
     "labels": ["Grid"],
     "type": "red, blue",
-    "description": "The color of the gridlines."
+    "description": "The color of the gridlines. This may be set on a per-axis basis to define each axis' grid separately."
   },
   "visibility": {
     "default": "[true, true, ...]",
@@ -552,7 +560,7 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
   "dateWindow": {
     "default": "Full range of the input is shown",
     "labels": ["Axis display"],
-    "type": "Array of two Dates or numbers",
+    "type": "Array of two numbers",
     "example": "[<br>&nbsp;&nbsp;Date.parse('2006-01-01'),<br>&nbsp;&nbsp;(new Date()).valueOf()<br>]",
     "description": "Initially zoom in on a section of the graph. Is of the form [earliest, latest], where earliest/latest are milliseconds since epoch. If the data for the x-axis is numeric, the values in dateWindow must also be numbers."
   },
@@ -648,15 +656,27 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
   },
   "drawXGrid": {
     "default": "true",
-    "labels": ["Grid"],
+    "labels": ["Grid","Deprecated"],
     "type": "boolean",
-    "description" : "Whether to display vertical gridlines under the chart."
+    "description" : "Use the per-axis option drawGrid instead. Whether to display vertical gridlines under the chart."
   },
   "drawYGrid": {
     "default": "true",
+    "labels": ["Grid","Deprecated"],
+    "type": "boolean",
+    "description" : "Use the per-axis option drawGrid instead. Whether to display horizontal gridlines under the chart."
+  },
+  "drawGrid": {
+    "default": "true for x and y, false for y2",
     "labels": ["Grid"],
     "type": "boolean",
-    "description" : "Whether to display horizontal gridlines under the chart."
+    "description" : "Whether to display gridlines in the chart. This may be set on a per-axis basis to define the visibility of each axis' grid separately."
+  },
+  "independentTicks": {
+    "default": "true for y, false for y2",
+    "labels": ["Axis display", "Grid"],
+    "type": "boolean",
+    "description" : "Only valid for y and y2, has no effect on x: This option defines whether the y axes should align their ticks or if they should be independent. Possible combinations: 1.) y=true, y2=false (default): y is the primary axis and the y2 ticks are aligned to the the ones of y. (only 1 grid) 2.) y=false, y2=true: y2 is the primary axis and the y ticks are aligned to the the ones of y2. (only 1 grid) 3.) y=true, y2=true: Both axis are independent and have their own ticks. (2 grids) 4.) y=false, y2=false: Invalid configuration causes an error."
   },
   "drawXAxis": {
     "default": "true",
@@ -674,7 +694,7 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     "default": "0.3",
     "labels": ["Grid"],
     "type": "float",
-    "description" : "Thickness (in pixels) of the gridlines drawn under the chart. The vertical/horizontal gridlines can be turned off entirely by using the drawXGrid and drawYGrid options."
+    "description" : "Thickness (in pixels) of the gridlines drawn under the chart. The vertical/horizontal gridlines can be turned off entirely by using the drawXGrid and drawYGrid options. This may be set on a per-axis basis to define each axis' grid separately."
   },
   "axisLineWidth": {
     "default": "0.3",
