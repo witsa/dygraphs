@@ -114,6 +114,12 @@ Dygraph.KMG2_SMALL_LABELS = [ 'm', 'u', 'n', 'p', 'f', 'a', 'z', 'y' ];
 
 // [WIT] permute arguments
 Dygraph.numberValueFormatter = function(x, pt, opts,  g) {
+  if (typeof(pt) === "function") {
+    var ptTemp = pt;
+    pt = opts;
+    opts = ptTemp;
+  }
+  
   var sigFigs = opts('sigFigs');
 
   if (sigFigs !== null) {
