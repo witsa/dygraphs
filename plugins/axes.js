@@ -72,9 +72,12 @@ axes.prototype.layout = function(e) {
 
   // [WIT] authorise more than 2 axes
   if (g.numAxes() >= 2) {
-    // TODO(danvk): per-axis setting.
-    var w = g.getOption('yAxisLabelWidth') + 2 * g.getOption('axisTickSize');
-    e.reserveSpaceRight(w);
+    // TODO(danvk): introduce a 'drawAxis' per-axis property.
+    if (g.getOption('drawYAxis')) {
+      // TODO(danvk): per-axis setting.
+      var w = g.getOption('yAxisLabelWidth') + 2 * g.getOption('axisTickSize');
+      e.reserveSpaceRight(w);
+    }
    }
    // [WIT] disable this warning
    //else if (g.numAxes() > 2) {
