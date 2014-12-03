@@ -20,7 +20,9 @@ perSeriesTestCase.prototype.testPerSeriesFill = function() {
     drawYGrid: false,
     drawXAxis: false,
     drawYAxis: false,
-    Y: { fillGraph: true },
+    series: {
+      Y: { fillGraph: true },
+    },
     colors: [ '#FF0000', '#0000FF' ],
     fillAlpha: 0.15
   };
@@ -164,4 +166,13 @@ perSeriesTestCase.prototype.testOldAxisSpecInNewSeriesThrows = function() {
   }
 
   assertTrue(threw);
+}
+
+perSeriesTestCase.prototype.testColorOption = function() {
+  var graph = document.getElementById("graph");
+  var data = "X,A,B,C\n0,1,2,3\n";
+  var g = new Dygraph(graph, data, {});
+  assertEquals(['rgb(64,128,0)', 'rgb(64,0,128)', 'rgb(0,128,128)'], g.getColors());
+  g.updateOptions({series : { B : { color : 'purple' }}});
+  assertEquals(['rgb(64,128,0)', 'purple', 'rgb(0,128,128)'], g.getColors());
 }

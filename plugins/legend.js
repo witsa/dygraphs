@@ -7,17 +7,14 @@
 
 Dygraph.Plugins.Legend = (function() {
 /*
-
 Current bits of jankiness:
 - Uses two private APIs:
     1. Dygraph.optionsViewForAxis_
     2. dygraph.plotter_.area
 - Registers for a "predraw" event, which should be renamed.
 - I call calculateEmWidthInDiv more often than needed.
-
 */
 
-/*jshint globalstrict: true */
 /*global Dygraph:false */
 "use strict";
 
@@ -38,7 +35,7 @@ legend.prototype.toString = function() {
 };
 
 // (defined below)
-var generateLegendHTML, generateLegendDashHTML;
+var generateLegendDashHTML;
 
 /**
  * This is called during the dygraph constructor, after options have been set
@@ -88,7 +85,7 @@ legend.prototype.activate = function(g) {
       try {
         div.style[name] = messagestyle[name];
       } catch (e) {
-        this.warn("You are using unsupported css properties for your " +
+        console.warn("You are using unsupported css properties for your " +
             "browser in labelsDivStyles");
       }
     }
@@ -120,20 +117,59 @@ var calculateEmWidthInDiv = function(div) {
   return oneEmWidth;
 };
 
+var escapeHTML = function(str) {
+  return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+};
+
 legend.prototype.select = function(e) {
   var xValue = e.selectedX;
   var points = e.selectedPoints;
 
-  var html = generateLegendHTML(e.dygraph, xValue, points, this.one_em_width_);
+  var legendMode = e.dygraph.getOption('legend');
+  if (legendMode === 'never') {
+    this.legend_div_.style.display = 'none';
+    return;
+  }
+
+  if (legendMode === 'follow') {
+    // create floating legend div
+    var area = e.dygraph.plotter_.area;
+    var labelsDivWidth = e.dygraph.getOption('labelsDivWidth');
+    var yAxisLabelWidth = e.dygraph.getOptionForAxis('axisLabelWidth', 'y');
+    // determine floating [left, top] coordinates of the legend div
+    // within the plotter_ area
+    // offset 20 px to the right and down from the first selection point
+    // 20 px is guess based on mouse cursor size
+    var leftLegend = points[0].x * area.w + 20;
+    var topLegend  = points[0].y * area.h - 20;
+
+    // if legend floats to end of the window area, it flips to the other
+    // side of the selection point
+    if ((leftLegend + labelsDivWidth + 1) > (window.scrollX + window.innerWidth)) {
+      leftLegend = leftLegend - 2 * 20 - labelsDivWidth - (yAxisLabelWidth - area.x);
+    }
+
+    e.dygraph.graphDiv.appendChild(this.legend_div_);
+    this.legend_div_.style.left = yAxisLabelWidth + leftLegend + "px";
+    this.legend_div_.style.top = topLegend + "px";
+  }
+
+  var html = legend.generateLegendHTML(e.dygraph, xValue, points, this.one_em_width_);
   this.legend_div_.innerHTML = html;
+  this.legend_div_.style.display = '';
 };
 
 legend.prototype.deselect = function(e) {
+  var legendMode = e.dygraph.getOption('legend');
+  if (legendMode !== 'always') {
+    this.legend_div_.style.display = "none";
+  }
+
   // Have to do this every time, since styles might have changed.
   var oneEmWidth = calculateEmWidthInDiv(this.legend_div_);
   this.one_em_width_ = oneEmWidth;
 
-  var html = generateLegendHTML(e.dygraph, undefined, undefined, oneEmWidth);
+  var html = legend.generateLegendHTML(e.dygraph, undefined, undefined, oneEmWidth);
   this.legend_div_.innerHTML = html;
 };
 
@@ -183,7 +219,7 @@ legend.prototype.destroy = function() {
  * relevant when displaying a legend with no selection (i.e. {legend:
  * 'always'}) and with dashed lines.
  */
-generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
+legend.generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
   // TODO(danvk): deprecate this option in place of {legend: 'never'}
   if (g.getOption('showLabelsOnHighlight') !== true) return '';
 
@@ -208,7 +244,7 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
       strokePattern = g.getOption("strokePattern", labels[i]);
       dash = generateLegendDashHTML(strokePattern, series.color, oneEmWidth);
       html += "<span style='font-weight: bold; color: " + series.color + ";'>" +
-          dash + " " + labels[i] + "</span>";
+          dash + " " + escapeHTML(labels[i]) + "</span>";
     }
     return html;
   }
@@ -245,7 +281,7 @@ generateLegendHTML = function(g, x, sel_points, oneEmWidth) {
 
     // TODO(danvk): use a template string here and make it an attribute.
     html += "<span" + cls + ">" + " <b><span style='color: " + series.color + ";'>" +
-        pt.name + "</span></b>:&nbsp;" + yval + "</span>";
+        escapeHTML(pt.name) + "</span></b>:&#160;" + yval + "</span>";
   }
   return html;
 };

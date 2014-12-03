@@ -26,11 +26,31 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+grep "$VERSION" package.json
+if [ $? -ne 0 ]; then
+  echo "Version in package.json doesn't match command line argument." >&2
+  exit 1
+fi
+
+grep "v$VERSION" bower.json
+if [ $? -ne 0 ]; then
+  echo "Version in bower.json doesn't match command line argument." >&2
+  exit 1
+fi
+
+grep "$VERSION" releases.json
+if [ $? -ne 0 ]; then
+  echo "Version $VERSION does not appear in releases.json." >&2
+  exit 1
+fi
+
+rm dygraph-combined.js  # changes to this will make the tests fail.
 make lint test test-combined
 if [ $? -ne 0 ]; then
   echo "Tests failed. Won't release!" >&2
   exit 1
 fi
+git reset --hard  # make test-combined deletes the source map
 
 # Push a permanent copy of documentation & generated files to a versioned copy
 # of the site. This is where the downloadable files are generated.
@@ -54,7 +74,12 @@ git tag -a "v$VERSION" -m "Release of version $VERSION"
 git push --tags
 
 echo "Release was successful!"
-echo "Don't forget to merge changes on this branch back into master."
+echo "Pushing the new version to dygraphs.com..."
+./push-to-web.sh dygraphs.com:dygraphs.com
+
+echo "Success!\n"
+echo "Don't forget to merge changes on this branch back into master:"
+echo "git merge --no-ff $branch"
 
 # Discourage users from working on the "releases" branch.
 git checkout master
