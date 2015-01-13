@@ -2,3 +2,5 @@ jsdoc
 docs/options.html
 node_modules
 env
+dygraph-combined.js
+dygraph-combined.js.map
