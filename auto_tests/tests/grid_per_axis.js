@@ -198,6 +198,8 @@ GridPerAxisTestCase.prototype.testPerAxisGridWidth = function() {
     for ( var i = 0; i < gridlines[axis].length; i++) {
       y = halfDown(g.toDomYCoord(gridlines[axis][i], axis));
       // Ignore the alpha value
+
+      // FIXME(pholden): this test fails with a context pixel ratio of 2.
       var drawnPixeldown2 = Util.samplePixel(g.hidden_, x, y - 2).slice(0, 3);
       var drawnPixeldown1 = Util.samplePixel(g.hidden_, x, y - 1).slice(0, 3);
       var drawnPixel = Util.samplePixel(g.hidden_, x, y).slice(0, 3);
@@ -249,14 +251,12 @@ GridPerAxisTestCase.prototype.testPerAxisGridWidth = function() {
         emptyColor, Util.samplePixel(g.hidden_, x + 2, y).slice(0, 3));
   }
 };
+
 GridPerAxisTestCase.prototype.testGridLinePattern = function() {
   var opts = {
     width : 120,
     height : 320,
     errorBars : false,
-    drawXGrid : false,
-    drawXAxis : false,
-    drawYAxis : false,
     labels : [ "X", "Left", "Right" ],
     colors : [ "rgba(0,0,0,0)", "rgba(0,0,0,0)" ],
     series : {
@@ -268,7 +268,12 @@ GridPerAxisTestCase.prototype.testGridLinePattern = function() {
       }
     },
     axes : {
+      x : {
+        drawGrid: false,
+        drawAxis: false,
+      },
       y : {
+        drawAxis : false,
         gridLineColor : "#0000ff",
         gridLinePattern : [ 10, 10 ]
       }

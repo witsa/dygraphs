@@ -16,7 +16,7 @@ Util.getYLabels = function(axis_num, parent) {
   var y_labels = parent.getElementsByClassName("dygraph-axis-label-y" + axis_num);
   var ary = [];
   for (var i = 0; i < y_labels.length; i++) {
-    ary.push(y_labels[i].innerHTML);
+    ary.push(y_labels[i].innerHTML.replace(/&#160;|&nbsp;/g, ' '));
   }
   return ary;
 };
@@ -31,7 +31,7 @@ Util.getXLabels = function(parent) {
   var x_labels = parent.getElementsByClassName("dygraph-axis-label-x");
   var ary = [];
   for (var i = 0; i < x_labels.length; i++) {
-    ary.push(x_labels[i].innerHTML);
+    ary.push(x_labels[i].innerHTML.replace(/&#160;|&nbsp;/g, ' '));
   }
   return ary;
 };
@@ -91,7 +91,9 @@ Util.samplePixel = function(canvas, x, y) {
   // TODO(danvk): Any performance issues with this?
   var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-  var i = 4 * (x + imageData.width * y);
+  var scale = Dygraph.getContextPixelRatio(ctx);
+
+  var i = 4 * (x * scale + imageData.width * y * scale);
   var d = imageData.data;
   return [d[i], d[i+1], d[i+2], d[i+3]];
 };
@@ -131,3 +133,11 @@ Util.overrideXMLHttpRequest = function(data) {
   return FakeXMLHttpRequest;
 };
 
+/**
+ * Format a date as 2000/01/23
+ * @param {number} dateMillis Millis since epoch.
+ * @return {string} The date formatted as YYYY-MM-DD.
+ */
+Util.formatDate = function(dateMillis) {
+  return Dygraph.dateString_(dateMillis).slice(0, 10);  // 10 == "YYYY/MM/DD".length
+};

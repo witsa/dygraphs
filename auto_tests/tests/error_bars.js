@@ -25,10 +25,16 @@ errorBarsTestCase.prototype.testErrorBarsDrawn = function() {
   var opts = {
     width: 480,
     height: 320,
-    drawXGrid: false,
-    drawYGrid: false,
-    drawXAxis: false,
-    drawYAxis: false,
+    axes : {
+      x : {
+        drawGrid: false,
+        drawAxis: false,
+      },
+      y : {
+        drawGrid: false,
+        drawAxis: false,
+      }
+    },
     customBars: true,
     errorBars: true
   };
@@ -102,10 +108,16 @@ errorBarsTestCase.prototype.testErrorBarsCorrectColors = function() {
     sigma: 1.0,
     fillAlpha: 0.15,
     colors: ['#00ff00', '#0000ff'],
-    drawXGrid: false,
-    drawYGrid: false,
-    drawXAxis: false,
-    drawYAxis: false,
+    axes : {
+      x : {
+        drawGrid: false,
+        drawAxis: false,
+      },
+      y : {
+        drawGrid: false,
+        drawAxis: false,
+      }
+    },
     width: 400,
     height: 300,
     valueRange: [0, 300],
@@ -135,8 +147,8 @@ errorBarsTestCase.prototype.testErrorBarsCorrectColors = function() {
 // Regression test for http://code.google.com/p/dygraphs/issues/detail?id=392
 errorBarsTestCase.prototype.testRollingAveragePreservesNaNs = function() {
   var graph = document.getElementById("graph");
-  var g = new Dygraph(graph,
-  [
+  var data = 
+    [
       [1, [null, null], [3,1]],
       [2, [2, 1], [null, null]],
       [3, [null, null], [5,1]],
@@ -145,8 +157,9 @@ errorBarsTestCase.prototype.testRollingAveragePreservesNaNs = function() {
       [6, [NaN, NaN], [null, null]],
       [8, [8, 1], [null, null]],
       [10, [10, 1], [null, null]]
-     ]
-        , {
+    ];
+  var g = new Dygraph(graph, data,
+        {
           labels: ['x', 'A', 'B' ],
           connectSeparatedPoints: true,
           drawPoints: true,
@@ -154,26 +167,20 @@ errorBarsTestCase.prototype.testRollingAveragePreservesNaNs = function() {
         }
       );
 
-  var in_series = [
-    [1, [null, null]],
-    [2, [2, 1]],
-    [3, [null, null]],
-    [4, [4, 0.5]],
-    [5, [null, null]],
-    [6, [NaN, NaN]],
-    [8, [8, 1]],
-    [10, [10, 1]]
-  ];
-  assertEquals(null, in_series[4][1][0]);
-  assertEquals(null, in_series[4][1][1]);
-  assertNaN(in_series[5][1][0]);
-  assertNaN(in_series[5][1][1]);
+  var in_series = g.dataHandler_.extractSeries(data, 1, g.attributes_);
 
-  var out_series = g.rollingAverage(in_series, 1);
-  assertNaN(out_series[5][1][0]);
-  assertNaN(out_series[5][1][1]);
-  assertNaN(out_series[5][1][2]);
-  assertEquals(null, out_series[4][1][0]);
-  assertEquals(null, out_series[4][1][1]);
-  assertEquals(null, out_series[4][1][1]);
+  assertEquals(null, in_series[4][1]);
+  assertEquals(null, in_series[4][2][0]);
+  assertEquals(null, in_series[4][2][1]);
+  assertNaN(in_series[5][1]);
+  assertNaN(in_series[5][2][0]);
+  assertNaN(in_series[5][2][1]);
+
+  var out_series = g.dataHandler_.rollingAverage(in_series, 1, g.attributes_);
+  assertNaN(out_series[5][1]);
+  assertNaN(out_series[5][2][0]);
+  assertNaN(out_series[5][2][1]);
+  assertEquals(null, out_series[4][1]);
+  assertEquals(null, out_series[4][2][0]);
+  assertEquals(null, out_series[4][2][1]);
 };
