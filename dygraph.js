@@ -83,7 +83,7 @@ var Dygraph = function(div, data, opts, opt_fourth_param) {
 };
 
 Dygraph.NAME = "Dygraph";
-Dygraph.VERSION = "1.1.0";
+Dygraph.VERSION = "1.1.1";
 Dygraph.__repr__ = function() {
   return "[" + Dygraph.NAME + " " + Dygraph.VERSION + "]";
 };
@@ -190,7 +190,7 @@ Dygraph.numberValueFormatter = function(x, opts) {
  * @private
  */
 Dygraph.numberAxisLabelFormatter = function(x, granularity, opts) {
-  return Dygraph.numberValueFormatter(x, opts);
+  return Dygraph.numberValueFormatter.call(this, x, opts);
 };
 
 /**
@@ -2074,6 +2074,7 @@ Dygraph.prototype.animateSelection_ = function(direction) {
 Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
   /*var defaultPrevented = */
   this.cascadeEvents_('select', {
+    selectedRow: this.lastRow_,
     selectedX: this.lastx_,
     selectedPoints: this.selPoints_
   });
@@ -2725,7 +2726,7 @@ Dygraph.prototype.renderGraph_ = function(is_initial_draw) {
   this.canvas_.getContext('2d').clearRect(0, 0, this.width_, this.height_);
 
   if (this.getFunctionOption("drawCallback") !== null) {
-    this.getFunctionOption("drawCallback")(this, is_initial_draw);
+    this.getFunctionOption("drawCallback").call(this, this, is_initial_draw);
   }
   if (is_initial_draw) {
     this.readyFired_ = true;
@@ -3799,6 +3800,10 @@ Dygraph.addAnnotationRule = function() {
 
   console.warn("Unable to add default annotation CSS rule; display may be off.");
 };
+
+if (typeof exports === "object" && typeof module !== "undefined") {
+  module.exports = Dygraph;
+}
 
 return Dygraph;
 
