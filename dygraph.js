@@ -270,6 +270,9 @@ Dygraph.DEFAULT_ATTRS = {
   highlightSeriesOpts: null,
   highlightSeriesBackgroundAlpha: 0.5,
 
+  // [WIT] highlightSeries default value
+  highlightSeries: null,
+
   labelsDivWidth: 250,
   labelsDivStyles: {
     // TODO(danvk): move defaults from createStatusMessage_ here.
@@ -1891,9 +1894,18 @@ Dygraph.prototype.findClosestRow = function(domX) {
  * Returns: {row, seriesName, point}
  * @private
  */
-Dygraph.prototype.findClosestPoint = function(domX, domY) {
+// [WIT] add forced setIdx to find only on this set.
+Dygraph.prototype.findClosestPoint = function(domX, domY, forcedSetIdx) {
   var minDist = Infinity;
   var dist, dx, dy, point, closestPoint, closestSeries, closestRow;
+
+  // [WIT] closest point by x.
+  var closestPointByX,
+    minDistByX = Infinity,
+    distByX,
+    idx = -1,
+    idxByX = -1;
+
   for ( var setIdx = this.layout_.points.length - 1 ; setIdx >= 0 ; --setIdx ) {
     var points = this.layout_.points[setIdx];
     for (var i = 0; i < points.length; ++i) {
@@ -1901,6 +1913,17 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
       if (!Dygraph.isValidPoint(point)) continue;
       dx = point.canvasx - domX;
       dy = point.canvasy - domY;
+
+      // [WIT] pass no forced  set indexes.
+      if (!forcedSetIdx || (Dygraph.isArrayLike(forcedSetIdx) && forcedSetIdx.indexOf(setIdx) != -1)) {
+        distByX = dx * dx;
+        if (distByX < minDistByX) {
+          minDistByX = distByX;
+          closestPointByX = point;
+          idxByX = i;
+        }
+      }
+
       dist = dx * dx + dy * dy;
       if (dist < minDist) {
         minDist = dist;
@@ -1912,8 +1935,10 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
   }
   var name = this.layout_.setNames[closestSeries];
   return {
+    rowByX: idxByX + this.getLeftBoundary_(),
     row: closestRow,
     seriesName: name,
+    pointByX: closestPointByX,
     point: closestPoint
   };
 };
@@ -1993,15 +2018,36 @@ Dygraph.prototype.mouseMove_ = function(event) {
   var canvasy = canvasCoords[1];
 
   var highlightSeriesOpts = this.getOption("highlightSeriesOpts");
+
+  // [WIT] forced highlight series
+  var highlightSeries = this.attr_("highlightSeries");
+
   var selectionChanged = false;
-  if (highlightSeriesOpts && !this.isSeriesLocked()) {
+  if ((highlightSeriesOpts ||
+       // [WIT]
+       (highlightSeries && highlightSeries.length > 0)) &&
+      !this.isSeriesLocked()) {
     var closest;
     if (this.getBooleanOption("stackedGraph")) {
       closest = this.findStackedPoint(canvasx, canvasy);
     } else {
-      closest = this.findClosestPoint(canvasx, canvasy);
+      // [WIT] find closest point in highlight series only
+      var indexes = null;
+      if (highlightSeries && highlightSeries.length > 0) {
+        indexes = [];
+        for (var nameIdx = 0; nameIdx < highlightSeries.length; nameIdx++) {
+          var name = highlightSeries[nameIdx];
+          indexes.push(this.datasetIndex_[this.indexFromSetName(name)]);
+        }
+      }
+
+      closest = this.findClosestPoint(canvasx, canvasy, indexes);
     }
-    selectionChanged = this.setSelection(closest.row, closest.seriesName);
+
+    // [WIT] select the closest point in highlight series only
+    var row = highlightSeries && highlightSeries.length > 0 ? closest.rowByX : closest.row;
+    var seriesName =    highlightSeriesOpts ? closest.seriesName : undefined;
+    selectionChanged = this.setSelection(row, seriesName, undefined, highlightSeries);
   } else {
     var idx = this.findClosestRow(canvasx);
     selectionChanged = this.setSelection(idx);
@@ -2083,7 +2129,9 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
   // Clear the previously drawn vertical, if there is one
   var i;
   var ctx = this.canvas_ctx_;
-  if (this.getOption('highlightSeriesOpts')) {
+  if (this.getOption('highlightSeriesOpts')
+      // [WIT] highlight series.
+      || (this.attr_('highlightSeries') && this.attr_('highlightSeries').length > 0)) {
     ctx.clearRect(0, 0, this.width_, this.height_);
     var alpha = 1.0 - this.getNumericOption('highlightSeriesBackgroundAlpha');
     if (alpha) {
@@ -2105,7 +2153,16 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
 
     // Redraw only the highlighted series in the interactive canvas (not the
     // static plot canvas, which is where series are usually drawn).
-    this.plotter_._renderLineChart(this.highlightSet_, ctx);
+    // [WIT] process highlightSets_
+    //this.plotter_._renderLineChart(this.highlightSet_, ctx);
+    if (this.highlightSets_) {
+      for (var hsIdx = 0; hsIdx < this.highlightSets_.length; hsIdx++) {
+        this.plotter_._renderLineChart(this.highlightSets_[hsIdx], ctx);
+      }
+    }
+    if (this.highlightSet_) {
+      this.plotter_._renderLineChart(this.highlightSet_, ctx);
+    }
   } else if (this.previousVerticalX_ >= 0) {
     // Determine the maximum highlight circle size.
     var maxCircleSize = 0;
@@ -2161,7 +2218,8 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
  * over the graph, disabling closest-series highlighting. Call clearSelection()
  * to unlock it.
  */
-Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked) {
+// [WIT] opt_seriesNames added.
+Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked, opt_seriesNames) {
   // Extract the points we've selected
   this.selPoints_ = [];
 
@@ -2199,6 +2257,33 @@ Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked) {
     this.lastx_ = this.selPoints_[0].xval;
   } else {
     this.lastx_ = -1;
+  }
+
+  //if (opt_seriesName !== undefined) {
+  //  if (this.highlightSet_ !== opt_seriesName) changed = true;
+  //  this.highlightSet_ = opt_seriesName;
+  //}
+  // [WIT] filter only forced series points in selection
+  if (opt_seriesNames !== null && opt_seriesNames !== undefined && opt_seriesNames.length>0) {
+    var newSelPoints = [];
+    for (var selPointIdx = 0; selPointIdx < this.selPoints_.length; selPointIdx++) {
+      var selPoint = this.selPoints_[selPointIdx];
+      for (var nameIdx = 0; nameIdx < opt_seriesNames.length; nameIdx++) {
+        var name = opt_seriesNames[nameIdx];
+        if (name === selPoint.name) {
+          newSelPoints.push(selPoint);
+          break;
+        }
+      }
+    }
+
+    this.selPoints_ = newSelPoints;
+  }
+
+  // [WIT] highlight only forced series.
+  if (opt_seriesNames !== undefined) {
+    if (this.highlightSets_ !== opt_seriesNames) changed = true;
+    this.highlightSets_ = opt_seriesNames;
   }
 
   if (opt_seriesName !== undefined) {
@@ -2250,6 +2335,9 @@ Dygraph.prototype.clearSelection = function() {
   this.lastx_ = -1;
   this.lastRow_ = -1;
   this.highlightSet_ = null;
+
+  // [WIT] clear multiple selection.
+  this.highlightSets_ = null;
 };
 
 /**
@@ -3497,6 +3585,12 @@ Dygraph.prototype.updateOptions = function(input_attrs, block_redraw) {
   // mapLegacyOptions_ drops the "file" parameter as a convenience to us.
   var file = input_attrs.file;
   var attrs = Dygraph.mapLegacyOptions_(input_attrs);
+
+  // [WIT] reset highlight set and mutiple sets when mofifying highlightSeries options
+  if ('highlightSeries' in attrs) {
+    this.highlightSet_ = null;
+    this.highlightSets_ = null;
+  }
 
   // TODO(danvk): this is a mess. Move these options into attr_.
   if ('rollPeriod' in attrs) {

@@ -10,6 +10,13 @@
 // most part, this just means that you should always use double quotes.
 Dygraph.OPTIONS_REFERENCE =  // <JSON>
 {
+  // [WIT] define highlightSeries
+  "highlightSeries": {
+    "default": "null",
+    "labels": ["Interactive Elements"],
+    "type": "array<string>",
+    "description": "When set, the series with these name will be highlighted, applied to the timeseries closest to the mouse pointer for interactive highlighting. See also 'highlightCallback'."
+  },
   "xValueParser": {
     "default": "parseFloat() or Date.parse()*",
     "labels": ["CSV parsing"],
