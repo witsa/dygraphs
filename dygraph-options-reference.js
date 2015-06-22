@@ -17,6 +17,14 @@ Dygraph.OPTIONS_REFERENCE =  // <JSON>
     "type": "array<string>",
     "description": "When set, the series with these name will be highlighted, applied to the timeseries closest to the mouse pointer for interactive highlighting. See also 'highlightCallback'."
   },
+  // [WIT] define highlightSeriesBackgroundColor
+  "highlightSeriesBackgroundColor": {
+    "default": "#FFFFFF",
+    "labels": ["Interactive Elements"],
+    "type": "string",
+    "description": "fading background color of the graph while highlighting series."
+  },
+
   "xValueParser": {
     "default": "parseFloat() or Date.parse()*",
     "labels": ["CSV parsing"],

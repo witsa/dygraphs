@@ -270,6 +270,9 @@ Dygraph.DEFAULT_ATTRS = {
   highlightSeriesOpts: null,
   highlightSeriesBackgroundAlpha: 0.5,
 
+  // [WIT] highlightSeriesBackgroundColor default value
+  highlightSeriesBackgroundColor: '#FFFFFF',
+
   // [WIT] highlightSeries default value
   highlightSeries: null,
 
@@ -2147,7 +2150,11 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
         }
         alpha *= opt_animFraction;
       }
-      ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+
+      // [WIT] highlightSeriesBackgroundColor
+      var bgColor = Dygraph.toRGB_(this.attr_('highlightSeriesBackgroundColor'));
+      ctx.fillStyle = 'rgba(' + bgColor.r + ',' + bgColor.g + ',' + bgColor.b + ',' + alpha + ')';
+      //ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
       ctx.fillRect(0, 0, this.width_, this.height_);
     }
 
