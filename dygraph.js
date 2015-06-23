@@ -3760,7 +3760,8 @@ Dygraph.prototype.visibility = function() {
   }
   // TODO(danvk): it looks like this could go into an infinite loop w/ user_attrs.
   while (this.getOption("visibility").length < this.numColumns() - 1) {
-    this.attrs_.visibility.push(true);
+    // [WIT] change visibility access.
+    this.getOption("visibility").push(true);
   }
   return this.getOption("visibility");
 };
