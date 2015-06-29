@@ -162,7 +162,9 @@ chart_labels.prototype.layout = function(e) {
     div.appendChild(this.ylabel_div_);
   }
 
-  if (g.getOption('y2label') && g.numAxes() == 2) {
+  // [WIT] authorises y2label to display when numAxes >= 2.
+  //if (g.getOption('y2label') && g.numAxes() == 2) {
+  if (g.getOption('y2label') && g.numAxes() >= 2) {
     // same logic applies here as for ylabel.
     var y2_rect = e.reserveSpaceRight(0);
     this.y2label_div_ = createRotatedDiv(

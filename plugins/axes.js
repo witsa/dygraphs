@@ -64,15 +64,18 @@ axes.prototype.layout = function(e) {
     e.reserveSpaceBottom(h);
   }
 
-  if (g.numAxes() == 2) {
+  // [WIT] authorise more than 2 axes
+  if (g.numAxes() >= 2) {
     if (g.getOptionForAxis('drawAxis', 'y2')) {
       var w = g.getOptionForAxis('axisLabelWidth', 'y2') + 2 * g.getOptionForAxis('axisTickSize', 'y2');
       e.reserveSpaceRight(w);
     }
-  } else if (g.numAxes() > 2) {
-    g.error('Only two y-axes are supported at this time. (Trying ' +
-            'to use ' + g.numAxes() + ')');
   }
+  // [WIT] disable this warning
+  //else if (g.numAxes() > 2) {
+  //  g.error('Only two y-axes are supported at this time. (Trying ' +
+  //          'to use ' + g.numAxes() + ')');
+  //}
 };
 
 axes.prototype.detachLabels = function() {
@@ -101,7 +104,7 @@ axes.prototype.willDrawChart = function(e) {
       !g.getOptionForAxis('drawAxis', 'y2')) {
     return;
   }
-  
+
   // Round pixels to half-integer boundaries for crisper drawing.
   function halfUp(x)  { return Math.round(x) + 0.5; }
   function halfDown(y){ return Math.round(y) - 0.5; }
@@ -210,8 +213,13 @@ axes.prototype.willDrawChart = function(e) {
           label.style.textAlign = 'right';
         } else if (tick[0] == 1) {
           label.style.left = (area.x + area.w +
-                              getAxisOption('axisTickSize')) + 'px';
-          label.style.textAlign = 'left';
+                              // [WIT] space for the axis label.
+                              //getAxisOption('axisTickSize')) + 'px';
+                              getAxisOption('axisTickSize') - 10) + 'px';
+
+          // [WIT] change text align of axis y labels.
+          //label.style.textAlign = 'left';
+          label.style.textAlign = 'right';
         }
         label.style.width = getAxisOption('axisLabelWidth') + 'px';
         containerDiv.appendChild(label);

@@ -203,7 +203,7 @@ Dygraph.SHORT_MONTH_NAMES_ = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', '
 
 /**
  * Convert a JS date to a string appropriate to display on an axis that
- * is displaying values at the stated granularity. This respects the 
+ * is displaying values at the stated granularity. This respects the
  * labelsUTC option.
  * @param {Date} date The date to format
  * @param {number} granularity One of the Dygraph granularity constants
@@ -241,7 +241,7 @@ Dygraph.dateAxisLabelFormatter = function(date, granularity, opts) {
 Dygraph.dateAxisFormatter = Dygraph.dateAxisLabelFormatter;
 
 /**
- * Return a string version of a JS date for a value label. This respects the 
+ * Return a string version of a JS date for a value label. This respects the
  * labelsUTC option.
  * @param {Date} date The date to be formatted
  * @param {Dygraph} opts An options view
@@ -2067,7 +2067,7 @@ Dygraph.prototype.mouseMove_ = function(event) {
 };
 
 /**
- * Fetch left offset from the specified set index or if not passed, the 
+ * Fetch left offset from the specified set index or if not passed, the
  * first defined boundaryIds record (see bug #236).
  * @private
  */
@@ -2454,7 +2454,7 @@ Dygraph.prototype.getHandlerClass_ = function() {
  */
 Dygraph.prototype.predraw_ = function() {
   var start = new Date();
-  
+
   // Create the correct dataHandler
   this.dataHandler_ = new (this.getHandlerClass_())();
 
@@ -2492,7 +2492,7 @@ Dygraph.prototype.predraw_ = function() {
     if (this.rollPeriod_ > 1) {
       series = this.dataHandler_.rollingAverage(series, this.rollPeriod_, this.attributes_);
     }
-    
+
     this.rolledSeries_.push(series);
   }
 
@@ -2651,7 +2651,7 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
   var seriesIdx, sampleIdx;
   var firstIdx, lastIdx;
   var axisIdx;
-  
+
   // Loop over the fields (series).  Go from the last to the first,
   // because if they're stacked that's how we accumulate the values.
   var num_series = rolledSeries.length - 1;
@@ -2669,7 +2669,7 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
 
       // TODO(danvk): do binary search instead of linear search.
       // TODO(danvk): pass firstIdx and lastIdx directly to the renderer.
-      firstIdx = null; 
+      firstIdx = null;
       lastIdx = null;
       for (sampleIdx = 0; sampleIdx < series.length; sampleIdx++) {
         if (series[sampleIdx][0] >= low && firstIdx === null) {
@@ -2703,9 +2703,9 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
       if (correctedLastIdx !== lastIdx) {
         lastIdx = correctedLastIdx;
       }
-      
+
       boundaryIds[seriesIdx-1] = [firstIdx, lastIdx];
-      
+
       // .slice's end is exclusive, we want to include lastIdx.
       series = series.slice(firstIdx, lastIdx + 1);
     } else {
@@ -2714,10 +2714,10 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
     }
 
     var seriesName = this.attr_("labels")[seriesIdx];
-    var seriesExtremes = this.dataHandler_.getExtremeYValues(series, 
+    var seriesExtremes = this.dataHandler_.getExtremeYValues(series,
         dateWindow, this.getBooleanOption("stepPlot",seriesName));
 
-    var seriesPoints = this.dataHandler_.seriesToPoints(series, 
+    var seriesPoints = this.dataHandler_.seriesToPoints(series,
         seriesName, boundaryIds[seriesIdx-1][0]);
 
     if (this.getBooleanOption("stackedGraph")) {
@@ -2886,17 +2886,22 @@ Dygraph.prototype.computeYAxes_ = function() {
   }
 
   for (axis = 0; axis < this.axes_.length; axis++) {
-    if (axis === 0) {
-      opts = this.optionsViewForAxis_('y' + (axis ? '2' : ''));
-      v = opts("valueRange");
-      if (v) this.axes_[axis].valueRange = v;
-    } else {  // To keep old behavior
-      var axes = this.user_attrs_.axes;
-      if (axes && axes.y2) {
-        v = axes.y2.valueRange;
-        if (v) this.axes_[axis].valueRange = v;
-      }
-    }
+    //if (axis === 0) {
+    //  opts = this.optionsViewForAxis_('y' + (axis ? '2' : ''));
+    //  v = opts("valueRange");
+    //  if (v) this.axes_[axis].valueRange = v;
+    //} else {  // To keep old behavior
+    //  var axes = this.user_attrs_.axes;
+    //  if (axes && axes.y2) {
+    //    v = axes.y2.valueRange;
+    //    if (v) this.axes_[axis].valueRange = v;
+    //  }
+    //}
+
+    // [WIT]
+    opts = this.optionsViewForAxis_('y' + (axis ? axis+1 : ''));
+    v = opts("valueRange");
+    if (v) this.axes_[axis].valueRange = v;
   }
 };
 
@@ -2932,7 +2937,7 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
   };
   var numAxes = this.attributes_.numAxes();
   var ypadCompat, span, series, ypad;
-  
+
   var p_axis;
 
   // Compute extreme values, a span and tick marks for each axis.
@@ -3058,19 +3063,23 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
     } else {
       axis.computedValueRange = axis.extremeRange;
     }
-    
-    
+
+    // [WIT] do not display ticks for axis more than 2.
+    if (i < 2) {
     if (independentTicks) {
       axis.independentTicks = independentTicks;
       var opts = this.optionsViewForAxis_('y' + (i ? '2' : ''));
       var ticker = opts('ticker');
       axis.ticks = ticker(axis.computedValueRange[0],
-              axis.computedValueRange[1],
-              this.plotter_.area.h,
-              opts,
-              this);
+        axis.computedValueRange[1],
+        this.plotter_.area.h,
+        opts,
+        this);
       // Define the first independent axis as primary axis.
       if (!p_axis) p_axis = axis;
+    }
+    } else {
+      axis.ticks = [];
     }
   }
   if (p_axis === undefined) {
@@ -3081,12 +3090,14 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
   // independent ticks, then that is permissible as well.
   for (var i = 0; i < numAxes; i++) {
     var axis = this.axes_[i];
-    
+    // [WIT] do not display ticks for axis more than 2.
+    if (i < 2) {
     if (!axis.independentTicks) {
       var opts = this.optionsViewForAxis_('y' + (i ? '2' : ''));
       var ticker = opts('ticker');
       var p_ticks = p_axis.ticks;
-      var p_scale = p_axis.computedValueRange[1] - p_axis.computedValueRange[0];
+      var p_scale = p_axis.computedValueRange[1] -
+                    p_axis.computedValueRange[0];
       var scale = axis.computedValueRange[1] - axis.computedValueRange[0];
       var tick_values = [];
       for (var k = 0; k < p_ticks.length; k++) {
@@ -3096,11 +3107,14 @@ Dygraph.prototype.computeYAxisRanges_ = function(extremes) {
       }
 
       axis.ticks = ticker(axis.computedValueRange[0],
-                          axis.computedValueRange[1],
-                          this.plotter_.area.h,
-                          opts,
-                          this,
-                          tick_values);
+        axis.computedValueRange[1],
+        this.plotter_.area.h,
+        opts,
+        this,
+        tick_values);
+    }
+    } else {
+      axis.ticks = [];
     }
   }
 };

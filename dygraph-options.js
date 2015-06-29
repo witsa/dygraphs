@@ -84,13 +84,27 @@ var DygraphOptions = function(dygraph) {
  * @type {Object.<number>}
  * @private
  */
-DygraphOptions.AXIS_STRING_MAPPINGS_ = {
-  'y' : 0,
-  'Y' : 0,
-  'y1' : 0,
-  'Y1' : 0,
-  'y2' : 1,
-  'Y2' : 1
+//DygraphOptions.AXIS_STRING_MAPPINGS_ = {
+//  'y' : 0,
+//  'Y' : 0,
+//  'y1' : 0,
+//  'Y1' : 0,
+//  'y2' : 1,
+//  'Y2' : 1
+//};
+
+// [WIT]
+DygraphOptions.axisStringMappings_ = function axisStringMappings_(axis) {
+  if (axis.toUpperCase() === 'Y') {
+     return 0;
+  }
+
+  var suffix = parseFloat(axis.substr(1));
+  if (isNaN(suffix)) {
+    throw "Unknown axis : " + axis;
+  }
+
+  return suffix -1;
 };
 
 /**
@@ -99,22 +113,30 @@ DygraphOptions.AXIS_STRING_MAPPINGS_ = {
  */
 DygraphOptions.axisToIndex_ = function(axis) {
   if (typeof(axis) == "string") {
-    if (DygraphOptions.AXIS_STRING_MAPPINGS_.hasOwnProperty(axis)) {
-      return DygraphOptions.AXIS_STRING_MAPPINGS_[axis];
-    }
-    throw "Unknown axis : " + axis;
+    // [WIT] Allow more than 2 axes.
+    //if (DygraphOptions.AXIS_STRING_MAPPINGS_.hasOwnProperty(axis)) {
+    //  return DygraphOptions.AXIS_STRING_MAPPINGS_[axis];
+    //}
+    //throw "Unknown axis : " + axis;
+    return DygraphOptions.axisStringMappings_(axis);
   }
   if (typeof(axis) == "number") {
-    if (axis === 0 || axis === 1) {
+    // [WIT] allow more than 2 axes.
+    //if (axis === 0 || axis === 1) {
       return axis;
-    }
-    throw "Dygraphs only supports two y-axes, indexed from 0-1.";
+    //}
+    //throw "Dygraphs only supports two y-axes, indexed from 0-1.";
   }
   if (axis) {
     throw "Unknown axis : " + axis;
   }
   // No axis specification means axis 0.
   return 0;
+};
+
+// [WIT]  Allow more than 2 axes.
+DygraphOptions.axisToString_ = function(axis) {
+  return 'y' + (axis === 0 ? '' : (axis + 1).toString());
 };
 
 /**
@@ -221,9 +243,14 @@ DygraphOptions.prototype.reparseSeries = function() {
 
   var axis_opts = this.user_["axes"] || {};
   Dygraph.update(this.yAxes_[0].options, axis_opts["y"] || {});
-  if (this.yAxes_.length > 1) {
-    Dygraph.update(this.yAxes_[1].options, axis_opts["y2"] || {});
+  // [WIT] allow more than 2 axes:
+  //if (this.yAxes_.length > 1) {
+  //  Dygraph.update(this.yAxes_[1].options, axis_opts["y2"] || {});
+  //}
+  for(var i=1;i<this.yAxes_.length;i++) {
+    Dygraph.update(this.yAxes_[i].options, axis_opts[DygraphOptions.axisToString_(i)]);
   }
+
   Dygraph.update(this.xAxis_.options, axis_opts["x"] || {});
 
   if (DEBUG) this.validateOptions_();
@@ -274,18 +301,22 @@ DygraphOptions.prototype.getForAxis = function(name, axis) {
   // Since axis can be a number or a string, straighten everything out here.
   if (typeof(axis) == 'number') {
     axisIdx = axis;
-    axisString = axisIdx === 0 ? "y" : "y2";
+    // [WIT]
+    //axisString = axisIdx === 0 ? "y" : "y2";
+    axisString = DygraphOptions.axisToString_(axisIdx);
   } else {
     if (axis == "y1") { axis = "y"; } // Standardize on 'y'. Is this bad? I think so.
-    if (axis == "y") {
-      axisIdx = 0;
-    } else if (axis == "y2") {
-      axisIdx = 1;
-    } else if (axis == "x") {
+
+    // WIT test first x axis
+    if (axis == "x") {
       axisIdx = -1; // simply a placeholder for below.
-    } else {
-      throw "Unknown axis " + axis;
+    } else  {
+      axisIdx = DygraphOptions.axisStringMappings_(axis);
+      if (axisIdx === null) {
+        throw "Unknown axis " + axis;
+      }
     }
+
     axisString = axis;
   }
 
@@ -307,6 +338,12 @@ DygraphOptions.prototype.getForAxis = function(name, axis) {
       return result;
     }
   }
+
+  // [WIT] allow more than 2 axes:
+  if (axisIdx >= 2) {
+    axisString = "y2";
+  }
+
   // Default axis options third.
   var defaultAxisOptions = Dygraph.DEFAULT_ATTRS.axes[axisString];
   if (defaultAxisOptions.hasOwnProperty(name)) {
@@ -365,15 +402,24 @@ DygraphOptions.prototype.axisForSeries = function(series) {
  */
 // TODO(konigsberg): this is y-axis specific. Support the x axis.
 DygraphOptions.prototype.axisOptions = function(yAxis) {
-  return this.yAxes_[yAxis].options;
+  // [WIT] allow more than 2 axes (gap in axis indexes)
+  if (this.yAxes_.hasOwnProperty(yAxis)) {
+    return this.yAxes_[yAxis].options;
+  } else {
+    return null;
+  }
 };
 
 /**
  * Return the series associated with an axis.
  */
 DygraphOptions.prototype.seriesForAxis = function(yAxis) {
-  return this.yAxes_[yAxis].series;
-};
+  // [WIT] allow more than 2 axes (gap in axis indexes)
+  if (this.yAxes_.hasOwnProperty(yAxis)) {
+    return this.yAxes_[yAxis].series;
+  } else {
+    return null;
+  }};
 
 /**
  * Return the list of all series, in their columnar order.
