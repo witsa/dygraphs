@@ -2141,7 +2141,9 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
       // Activating background fade includes an animation effect for a gradual
       // fade. TODO(klausw): make this independently configurable if it causes
       // issues? Use a shared preference to control animations?
-      var animateBackgroundFade = true;
+      // [WIT] it causes some issues.
+      //var animateBackgroundFade = true;
+      var animateBackgroundFade = false;
       if (animateBackgroundFade) {
         if (opt_animFraction === undefined) {
           // start a new animation
