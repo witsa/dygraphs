@@ -187,6 +187,10 @@ axes.prototype.willDrawChart = function(e) {
           sgn = -1;
           prec_axis = 'y2';
           getAxisOption = getOptions[1];
+          // [WIT] avoid drawing axis if needed.
+          if(!getAxisOption('drawAxis')) {
+            continue;
+          }
         }
         var fontSize = getAxisOption('axisLabelFontSize');
         y = area.y + tick[1] * area.h;
