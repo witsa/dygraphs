@@ -74,7 +74,7 @@ Dygraph.Interaction.startPan = function(event, g, context) {
     context.initialLeftmostDate = Dygraph.log10(xRange[0]);
     context.dateRange = Dygraph.log10(xRange[1]) - Dygraph.log10(xRange[0]);
   } else {
-    context.initialLeftmostDate = xRange[0];    
+    context.initialLeftmostDate = xRange[0];
     context.dateRange = xRange[1] - xRange[0];
   }
   context.xUnitsPerPixel = context.dateRange / (g.plotter_.area.w - 1);
@@ -114,27 +114,28 @@ Dygraph.Interaction.startPan = function(event, g, context) {
   // and could change out from under us during a pan (say if there's a data
   // update).
   context.is2DPan = false;
-  context.axes = [];
-  for (i = 0; i < g.axes_.length; i++) {
-    axis = g.axes_[i];
-    var axis_data = {};
-    var yRange = g.yAxisRange(i);
-    // TODO(konigsberg): These values should be in |context|.
-    // In log scale, initialTopValue, dragValueRange and unitsPerPixel are log scale.
-    var logscale = g.attributes_.getForAxis("logscale", i);
-    if (logscale) {
-      axis_data.initialTopValue = Dygraph.log10(yRange[1]);
-      axis_data.dragValueRange = Dygraph.log10(yRange[1]) - Dygraph.log10(yRange[0]);
-    } else {
-      axis_data.initialTopValue = yRange[1];
-      axis_data.dragValueRange = yRange[1] - yRange[0];
-    }
-    axis_data.unitsPerPixel = axis_data.dragValueRange / (g.plotter_.area.h - 1);
-    context.axes.push(axis_data);
-
-    // While calculating axes, set 2dpan.
-    if (axis.valueWindow || axis.valueRange) context.is2DPan = true;
-  }
+  // [WIT] desactivate Y Pan.
+  //context.axes = [];
+  //for (i = 0; i < g.axes_.length; i++) {
+  //  axis = g.axes_[i];
+  //  var axis_data = {};
+  //  var yRange = g.yAxisRange(i);
+  //  // TODO(konigsberg): These values should be in |context|.
+  //  // In log scale, initialTopValue, dragValueRange and unitsPerPixel are log scale.
+  //  var logscale = g.attributes_.getForAxis("logscale", i);
+  //  if (logscale) {
+  //    axis_data.initialTopValue = Dygraph.log10(yRange[1]);
+  //    axis_data.dragValueRange = Dygraph.log10(yRange[1]) - Dygraph.log10(yRange[0]);
+  //  } else {
+  //    axis_data.initialTopValue = yRange[1];
+  //    axis_data.dragValueRange = yRange[1] - yRange[0];
+  //  }
+  //  axis_data.unitsPerPixel = axis_data.dragValueRange / (g.plotter_.area.h - 1);
+  //  context.axes.push(axis_data);
+  //
+  //  // While calculating axes, set 2dpan.
+  //  if (axis.valueWindow || axis.valueRange) context.is2DPan = true;
+  //}
 };
 
 /**
@@ -173,7 +174,7 @@ Dygraph.Interaction.movePan = function(event, g, context) {
     g.dateWindow_ = [ Math.pow(Dygraph.LOG_SCALE, minDate),
                       Math.pow(Dygraph.LOG_SCALE, maxDate) ];
   } else {
-    g.dateWindow_ = [minDate, maxDate];    
+    g.dateWindow_ = [minDate, maxDate];
   }
 
   // y-axis scaling is automatic unless this is a full 2D pan.
@@ -270,9 +271,12 @@ Dygraph.Interaction.moveZoom = function(event, g, context) {
 
   var xDelta = Math.abs(context.dragStartX - context.dragEndX);
   var yDelta = Math.abs(context.dragStartY - context.dragEndY);
+  //var yDelta = 0;
 
   // drag direction threshold for y axis is twice as large as x axis
-  context.dragDirection = (xDelta < yDelta / 2) ? Dygraph.VERTICAL : Dygraph.HORIZONTAL;
+  // [WIT] disable Y zoom.
+  //context.dragDirection = (xDelta < yDelta / 2) ? Dygraph.VERTICAL : Dygraph.HORIZONTAL;
+  context.dragDirection =  Dygraph.HORIZONTAL;
 
   g.drawZoomRect_(
       context.dragDirection,
@@ -535,7 +539,7 @@ Dygraph.Interaction.moveTouch = function(event, g, context) {
     ];
     didZoom = true;
   }
-  
+
   if (context.touchDirections.y) {
     for (i = 0; i < 1  /*g.axes_.length*/; i++) {
       var axis = g.axes_[i];
