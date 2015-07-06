@@ -1188,17 +1188,18 @@ Dygraph.prototype.createInterface_ = function() {
   this.addAndTrackEvent(window, 'mouseout', this.mouseOutHandler_);
   this.addAndTrackEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler_);
 
-  // Don't recreate and register the resize handler on subsequent calls.
-  // This happens when the graph is resized.
-  if (!this.resizeHandler_) {
-    this.resizeHandler_ = function(e) {
-      dygraph.resize();
-    };
-
-    // Update when the window is resized.
-    // TODO(danvk): drop frames depending on complexity of the chart.
-    this.addAndTrackEvent(window, 'resize', this.resizeHandler_);
-  }
+  // [WIT] désactivate auto resize when window is resizing.
+  //// Don't recreate and register the resize handler on subsequent calls.
+  //// This happens when the graph is resized.
+  //if (!this.resizeHandler_) {
+  //  this.resizeHandler_ = function(e) {
+  //    dygraph.resize();
+  //  };
+  //
+  //  // Update when the window is resized.
+  //  // TODO(danvk): drop frames depending on complexity of the chart.
+  //  this.addAndTrackEvent(window, 'resize', this.resizeHandler_);
+  //}
 };
 
 Dygraph.prototype.resizeElements_ = function() {
@@ -1253,8 +1254,9 @@ Dygraph.prototype.destroy = function() {
   Dygraph.removeEvent(this.mouseEventElement_, 'mousemove', this.mouseMoveHandler_);
 
   // remove window handlers
-  Dygraph.removeEvent(window,'resize', this.resizeHandler_);
-  this.resizeHandler_ = null;
+  // [WIT] désactivate auto resize when window is resizing.
+  //Dygraph.removeEvent(window,'resize', this.resizeHandler_);
+  //this.resizeHandler_ = null;
 
   removeRecursive(this.maindiv_);
 
