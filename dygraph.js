@@ -2244,6 +2244,12 @@ Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked, opt_s
       // for.  If it is, just use it, otherwise search the array for a point
       // in the proper place.
       var setRow = row - this.getLeftBoundary_(setIdx);
+
+      // [WIT] Fix problem : setRow is sometime = -1 => set to 0.
+      if( setRow === -1) {
+        setRow = 0;
+      }
+
       if (setRow < points.length && points[setRow].idx == row) {
         var point = points[setRow];
         if (point.yval !== null) this.selPoints_.push(point);
